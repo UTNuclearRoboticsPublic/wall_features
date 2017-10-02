@@ -11,4 +11,5 @@
 #include "wall_features/wall_damage_estimation.h"
 #include "wall_features/wall_damage_estimation.hpp"
 
-template class pcl::WallDamageEstimation<PointWallDamage, WallDamageHistogram>;
+template class pcl::WallDamagePointwiseEstimation<PCLPoint, PointWallDamage>;
+template class pcl::WallDamageHistogramEstimation<PointWallDamage, WallDamageHistogram>;

@@ -6,21 +6,50 @@
 #include <pcl/features/feature.h>
 #include <pcl/common/centroid.h>
 
+#include <pcl/point_types.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_representation.h>
+#include <pcl/kdtree/kdtree.h>
+#include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/features/normal_3d_omp.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/filters/filter.h>
+
+typedef pcl::PointXYZRGB PCLPoint;
+typedef pcl::PointCloud<pcl::PointNormal> PCN;
+typedef pcl::PointCloud<pcl::PointNormal>::Ptr PCNP;
+
 namespace pcl
 {
 	template <typename PointInT, typename PointOutT>
-	class WallDamageEstimation: public Feature<PointInT, PointOutT>
+	class WallDamagePointwiseEstimation: public Feature<PointInT, PointOutT>
 	{
 	public:
 		/** \brief Empty constructor. */
-		WallDamageEstimation () 
+		WallDamagePointwiseEstimation () 
 		{
 			//feature_name_ = "WallDamageEstimation";
 		};
 
 		/** \brief Empty destructor */
-		virtual ~WallDamageEstimation () {}
+		virtual ~WallDamagePointwiseEstimation () {}
 		void compute (const pcl::PointCloud<PointInT> &input, pcl::PointCloud<PointOutT> &output);
+	};
+
+	template <typename PointInT, typename PointOutT>
+	class WallDamageHistogramEstimation: public Feature<PointInT, PointOutT>
+	{
+	public:
+		/** \brief Empty constructor. */
+		WallDamageHistogramEstimation () 
+		{
+			//feature_name_ = "WallDamageEstimation";
+		};
+
+		/** \brief Empty destructor */
+		virtual ~WallDamageHistogramEstimation () {}
+		void compute (const pcl::PointCloud<PointInT> &input, pcl::PointCloud<PointOutT> &output);
+		void compute (const pcl::PointCloud<PointInT> &input, const pcl::PointCloud<PointInT> &interest_points, pcl::PointCloud<PointOutT> &output);
 	};
 };
 

@@ -9,6 +9,7 @@
 // Choosing NOT to encode gross plane information in each point since it's the same across all of them - just need to make sure to manage this intelligently
 //   Note that the angle and dist offsets are only meaningful given a fixed external reference plane! 
 
+namespace pcl {
 struct PointWallDamage
 {
   PCL_ADD_POINT4D;                  // preferred way of adding a XYZ+padding
@@ -18,3 +19,13 @@ struct PointWallDamage
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW   // make sure our new allocators are aligned
 } EIGEN_ALIGN16;                    // enforce SSE padding for correct memory alignment
+
+}
+POINT_CLOUD_REGISTER_POINT_STRUCT (pcl::PointWallDamage, 
+                                   (float, x, x)
+                                   (float, y, y)
+                                   (float, z, z)
+                                   (float, angle_offset, angle_offset)
+                                   (float, dist_offset, dist_offset)
+)
+PCL_EXPORTS std::ostream& operator << (std::ostream& os, const pcl::PointWallDamage& p);

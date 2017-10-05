@@ -5,6 +5,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl/io/pcd_io.h>
 
+namespace pcl {
 struct WallDamageHistogram
 {
   PCL_ADD_POINT4D;                  // preferred way of adding a XYZ+padding
@@ -18,8 +19,8 @@ struct WallDamageHistogram
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW   // make sure our new allocators are aligned
 } EIGEN_ALIGN16;                    // enforce SSE padding for correct memory alignment
-
-POINT_CLOUD_REGISTER_POINT_STRUCT (WallDamageHistogram,           // here we assume a XYZ + "test" (as fields)
+}
+POINT_CLOUD_REGISTER_POINT_STRUCT (pcl::WallDamageHistogram, 
                                    (float, x, x)
                                    (float, y, y)
                                    (float, z, z)
@@ -28,4 +29,5 @@ POINT_CLOUD_REGISTER_POINT_STRUCT (WallDamageHistogram,           // here we ass
                                    (float[80], histogram, histogram)
 
 )
-PCL_EXPORTS std::ostream& operator << (std::ostream& os, const WallDamageHistogram& p);
+PCL_EXPORTS std::ostream& operator << (std::ostream& os, const pcl::WallDamageHistogram& p);
+

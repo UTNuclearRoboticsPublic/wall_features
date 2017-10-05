@@ -118,6 +118,14 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${pcl_
 add_library(wall_damage_estimation src/wall_damage_estimation.cpp)
 add_dependencies(wall_damage_estimation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+add_executable(wall_damage_histogram_client src/wall_damage_histogram_client.cpp)
+add_dependencies(
+   wall_damage_histogram_client ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
+)
+target_link_libraries(
+  wall_damage_histogram_client ${catkin_LIBRARIES}
+)
+
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(

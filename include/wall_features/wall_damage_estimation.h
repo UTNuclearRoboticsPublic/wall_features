@@ -21,10 +21,26 @@ typedef pcl::PointCloud<pcl::PointNormal>::Ptr PCNP;
 
 namespace pcl
 {
+
+
+
 	template <typename PointInT, typename PointOutT>
-	class WallDamagePointwiseEstimation: public Feature<PointInT, PointOutT>
+	class WallDamagePointwiseEstimation//: public Feature<PointInT, PointOutT>
 	{
 	public:
+		typedef boost::shared_ptr<WallDamagePointwiseEstimation<PointInT,PointOutT> > Ptr;
+		typedef boost::shared_ptr<const WallDamagePointwiseEstimation<PointInT,PointOutT> > ConstPtr;
+		/*using Feature<PointInT, PointOutT>::feature_name_;
+        using Feature<PointInT, PointOutT>::getClassName;
+        using Feature<PointInT, PointOutT>::indices_;
+        using Feature<PointInT, PointOutT>::input_;
+        using Feature<PointInT, PointOutT>::surface_;
+        using Feature<PointInT, PointOutT>::k_;
+        using Feature<PointInT, PointOutT>::search_radius_;
+        using Feature<PointInT, PointOutT>::search_parameter_; */
+        typedef typename Feature<PointInT, PointOutT>::PointCloudOut PointCloudOut;
+        typedef typename Feature<PointInT, PointOutT>::PointCloudConstPtr PointCloudConstPtr;
+
 		/** \brief Empty constructor. */
 		WallDamagePointwiseEstimation () 
 		{
@@ -34,12 +50,41 @@ namespace pcl
 		/** \brief Empty destructor */
 		virtual ~WallDamagePointwiseEstimation () {}
 		void compute (const pcl::PointCloud<PointInT> &input, pcl::PointCloud<PointOutT> &output);
+		void computeFeature (pcl::PointCloud<PointOutT> &output);
+		
+		virtual inline void 
+        setInputCloud (const PointCloudConstPtr &cloud)
+        { /*
+          input_ = cloud;
+          if (use_sensor_origin_)
+          {
+            vpx_ = input_->sensor_origin_.coeff (0);
+            vpy_ = input_->sensor_origin_.coeff (1);
+            vpz_ = input_->sensor_origin_.coeff (2);
+          } */
+        }
 	};
 
+
+
+
 	template <typename PointInT, typename PointOutT>
-	class WallDamageHistogramEstimation: public Feature<PointInT, PointOutT>
+	class WallDamageHistogramEstimation//: public Feature<PointInT, PointOutT>
 	{
 	public:
+		typedef boost::shared_ptr<WallDamageHistogramEstimation<PointInT,PointOutT> > Ptr;
+		typedef boost::shared_ptr<const WallDamageHistogramEstimation<PointInT,PointOutT> > ConstPtr;
+		/*using Feature<PointInT, PointOutT>::feature_name_;
+        using Feature<PointInT, PointOutT>::getClassName;
+        using Feature<PointInT, PointOutT>::indices_;
+        using Feature<PointInT, PointOutT>::input_;
+        using Feature<PointInT, PointOutT>::surface_;
+        using Feature<PointInT, PointOutT>::k_;
+        using Feature<PointInT, PointOutT>::search_radius_;
+        using Feature<PointInT, PointOutT>::search_parameter_; */
+        typedef typename Feature<PointInT, PointOutT>::PointCloudOut PointCloudOut;
+        typedef typename Feature<PointInT, PointOutT>::PointCloudConstPtr PointCloudConstPtr;
+
 		/** \brief Empty constructor. */
 		WallDamageHistogramEstimation () 
 		{
@@ -50,7 +95,30 @@ namespace pcl
 		virtual ~WallDamageHistogramEstimation () {}
 		void compute (const pcl::PointCloud<PointInT> &input, pcl::PointCloud<PointOutT> &output);
 		void compute (const pcl::PointCloud<PointInT> &input, const pcl::PointCloud<PointInT> &interest_points, pcl::PointCloud<PointOutT> &output);
+		void computeFeature (pcl::PointCloud<PointOutT> &output);
+		void setInputCloud(const pcl::PointCloud<PointInT> &input);
+
+		virtual inline void 
+        setInputCloud (const PointCloudConstPtr &cloud)
+        { /*
+          input_ = cloud;
+          if (use_sensor_origin_)
+          {
+            vpx_ = input_->sensor_origin_.coeff (0);
+            vpy_ = input_->sensor_origin_.coeff (1);
+            vpz_ = input_->sensor_origin_.coeff (2);
+          } */
+        }
 	};
+
+
+
+
+
 };
+
+#ifdef PCL_NO_PRECOMPILE
+#include "wall_features/wall_damage_estimation.hpp"
+#endif // PCL_NO_PRECOMPILE
 
 #endif // WALL_DAMAGE_ESTIMATION_

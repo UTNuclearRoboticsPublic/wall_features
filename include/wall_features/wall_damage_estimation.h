@@ -68,12 +68,12 @@ namespace pcl
 
 
 
-	template <typename PointInT, typename PointOutT>
+	template <typename PointInT, typename PointInterestT, typename PointOutT>
 	class WallDamageHistogramEstimation//: public Feature<PointInT, PointOutT>
 	{
 	public:
-		typedef boost::shared_ptr<WallDamageHistogramEstimation<PointInT,PointOutT> > Ptr;
-		typedef boost::shared_ptr<const WallDamageHistogramEstimation<PointInT,PointOutT> > ConstPtr;
+		typedef boost::shared_ptr<WallDamageHistogramEstimation<PointInT,PointInterestT,PointOutT> > Ptr;
+		typedef boost::shared_ptr<const WallDamageHistogramEstimation<PointInT,PointInterestT,PointOutT> > ConstPtr;
 		/*using Feature<PointInT, PointOutT>::feature_name_;
         using Feature<PointInT, PointOutT>::getClassName;
         using Feature<PointInT, PointOutT>::indices_;
@@ -94,7 +94,7 @@ namespace pcl
 		/** \brief Empty destructor */
 		virtual ~WallDamageHistogramEstimation () {}
 		void compute (const pcl::PointCloud<PointInT> &input, pcl::PointCloud<PointOutT> &output);
-		void compute (const pcl::PointCloud<PointInT> &input, const pcl::PointCloud<PointInT> &interest_points, pcl::PointCloud<PointOutT> &output);
+		void compute (const pcl::PointCloud<PointInT> &input, const pcl::PointCloud<PointInterestT> &interest_points, pcl::PointCloud<PointOutT> &output);
 		void computeFeature (pcl::PointCloud<PointOutT> &output);
 		void setInputCloud(const pcl::PointCloud<PointInT> &input);
 

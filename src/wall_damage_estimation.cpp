@@ -12,4 +12,4 @@
 #include "wall_features/wall_damage_estimation.hpp"
 
 template class pcl::WallDamagePointwiseEstimation<pcl::PointXYZRGB, pcl::PointWallDamage>;
-template class pcl::WallDamageHistogramEstimation<pcl::PointWallDamage, pcl::WallDamageHistogram>;
+template class pcl::WallDamageHistogramEstimation<pcl::PointWallDamage, pcl::PointXYZRGB, pcl::WallDamageHistogram>;

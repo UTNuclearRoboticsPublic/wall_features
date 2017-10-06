@@ -11,6 +11,7 @@ find_package(catkin REQUIRED
 	pcl_ros
 	pcl_conversions
 	roscpp
+	pointcloud_primitive_search
 )
 
 ## System dependencies are found with CMake's conventions

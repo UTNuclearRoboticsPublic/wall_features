@@ -29,10 +29,10 @@ namespace pcl
 
 		// TEMPORARY - this an external input later on...
 		pcl::Normal wall_normal;
-		wall_normal.normal_x = 0;
-		wall_normal.normal_y = 1;
-		wall_normal.normal_z = 0;
-		float wall_distance = 0.953;
+		wall_normal.normal_x = wall_coeffs_[0];
+		wall_normal.normal_y = wall_coeffs_[1];
+		wall_normal.normal_z = wall_coeffs_[2];
+		float wall_distance = wall_coeffs_[3];
 
 		// ------------------------ Generate Normals from Input ------------------------
 		// Note that this obviously only has to be done once per input cloud 
@@ -58,9 +58,6 @@ namespace pcl
 			points_with_normals->points[i].z = nanless_input->points[i].z;
 		}
 		ROS_DEBUG_STREAM("[WallDamageEstimation] Created XYZNormal cloud from input, with size " << points_with_normals->points.size());
-		//   Remove NaNs from normal cloud (for safety - had crashes before due to NaN in input)
-		//pcl::removeNaNFromPointCloud(*points_with_normals, *points_with_normals, nan_indices); 
-		//ROS_DEBUG_STREAM("[WallDamageEstimation] Removed NaNs from normal cloud - had " << nan_indices.size() << "NaN entries.");
 
 		output.points.clear();
 		for(int i=0; i<points_with_normals->points.size(); i++)
@@ -69,7 +66,6 @@ namespace pcl
 			point.x = points_with_normals->points[i].x;
 			point.y = points_with_normals->points[i].y;
 			point.z = points_with_normals->points[i].z;
-			ROS_DEBUG_STREAM_THROTTLE(0.1, "first point data: " << points_with_normals->points[i].x << " " << points_with_normals->points[i].y << " " << points_with_normals->points[i].x << " " << input.points[i].x << " " << input.points[i].y << " " << input.points[i].z);
 			point.normal_x = points_with_normals->points[i].normal_x;
 			point.normal_y = points_with_normals->points[i].normal_y;
 			point.normal_z = points_with_normals->points[i].normal_z;
@@ -80,6 +76,10 @@ namespace pcl
 			float point_normal_mag = sqrt(pow(point.normal_x,2) + pow(point.normal_y,2) + pow(point.normal_z,2));
 			point.angle_offset = acos(dot_product/wall_normal_mag/point_normal_mag);	// Absolute value of the angle difference between plane and point normal (assuming acos -> 0 to pi)
 
+			// Move angle range from (0 to pi) to (-pi/2 to pi/2) --> puts 'parallel to wall' (ie angle=0) at middle, not edges  
+			if(point.angle_offset > 1.570796)
+				point.angle_offset = point.angle_offset-3.141593;
+
 			// Distance between point and plane
 			pcl::PointXYZ point_to_wall;			// Vector from the current point to the wall normal-from-origin point
 			point_to_wall.x = point.x - wall_normal.normal_x*wall_distance;
@@ -89,8 +89,22 @@ namespace pcl
 
 			output.points.push_back(point);
 		}
-		ROS_ERROR_STREAM("[WallDamageEstimation] Found normal and angular offsets for all points in input cloud.");
+		ROS_DEBUG_STREAM("[WallDamageEstimation] Found normal and angular offsets for all points in input cloud.");
 	} 
+	template <typename PointInT, typename PointOutT> void 
+	WallDamagePointwiseEstimation<PointInT, PointOutT>::setKSearch(const int k_search)
+	{
+		k_ = k_search;
+	}
+	template <typename PointInT, typename PointOutT> void 
+	WallDamagePointwiseEstimation<PointInT, PointOutT>::setWallCoefficients(const float wall_coeffs[4])
+	{
+		wall_coeffs_[0] = wall_coeffs[0];
+		wall_coeffs_[1] = wall_coeffs[1];
+		wall_coeffs_[2] = wall_coeffs[2];
+		wall_coeffs_[3] = wall_coeffs[3];
+	}
+
 
 // -----------------------------------------------------------------------------------------------------------------------------
 // ------------------------------------------------ Histogram Damage Estimation ------------------------------------------------
@@ -107,8 +121,8 @@ namespace pcl
 		{
 			pcl::PointXYZRGB point;
 			point.x = input.points[i].x;
-			point.x = input.points[i].y;
-			point.x = input.points[i].z;
+			point.y = input.points[i].y;
+			point.z = input.points[i].z;
 		}
 		this->compute(input, interest_points, output);
 	}
@@ -117,62 +131,37 @@ namespace pcl
 																const pcl::PointCloud<PointInterestT> &interest_points,
 																pcl::PointCloud<PointOutT> &output)
 	{
-		if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug) )
-    ros::console::notifyLoggerLevelsChanged();  
-		ROS_ERROR_STREAM("entered second features processor");
+		//if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug) )
+    //ros::console::notifyLoggerLevelsChanged();  
 
 		output.points.clear();
 		pcl::PointCloud<PointXYZ>::Ptr interest_points_ptr(new pcl::PointCloud<PointXYZ>);
+		interest_points_ptr->points.clear();
 		for(int i=0; i<interest_points.points.size(); i++)
 		{
 			PointXYZ point;
 			point.x = interest_points.points[i].x;
 			point.y = interest_points.points[i].y;
-			point.y = interest_points.points[i].z;
+			point.z = interest_points.points[i].z;
 			interest_points_ptr->points.push_back(point);
 		}
-		ROS_DEBUG_STREAM("[WallDamageEstimation] Built interest points cloud, with size " << interest_points_ptr->points.size());
+		pcl::PointCloud<PointXYZ>::Ptr input_ptr(new pcl::PointCloud<PointXYZ>);
+		input_ptr->points.clear();
+		for(int i=0; i<input.points.size(); i++)
+		{
+			PointXYZ point;
+			point.x = input.points[i].x;
+			point.y = input.points[i].y;
+			point.z = input.points[i].z;
+			input_ptr->points.push_back(point);
+		}
+		ROS_DEBUG_STREAM("[WallDamageEstimation] Built interest points cloud, with size " << input_ptr->points.size());
 		pcl::KdTreeFLANN<PointXYZ> kdtree;
-		kdtree.setInputCloud(interest_points_ptr);
+		kdtree.setInputCloud(input_ptr);
 		ROS_DEBUG_STREAM("[WallDamageEstimation] Initialized KdTree object.");
 
-		//float max_dist_recorded; 						// Normalize distances by maximum? To allow simple binning... but destroys absolute deviation information 
-		float min_dist_bin = -0.007; 	// 15cm
-		float max_dist_bin = 0.007; 		// 15cm
-		float min_angle_bin = 0;
-		float max_angle_bin = 3.14159;
 		int bins = 80;
 		
-		float min_angle = 0;
-		float max_angle = 0;
-		float min_deviation = 0;
-		float max_deviation = 0;
-		for(int i=0; i<input.points.size(); i++)
-		{
-			if(input.points[i].angle_offset < min_angle)
-				min_angle = input.points[i].angle_offset;
-			if(input.points[i].angle_offset > max_angle)
-				max_angle = input.points[i].angle_offset;
-			if(input.points[i].dist_offset < min_deviation)
-				min_deviation = input.points[i].dist_offset;
-			if(input.points[i].dist_offset < max_deviation)
-				max_deviation = input.points[i].dist_offset;
-		}
-		ROS_ERROR_STREAM("min max... " << min_angle << " " << max_angle << " " << min_deviation << " " << max_deviation);
-
-		float avg_x = 0;
-		float min_x = 0; 
-		float max_x = 0;
-		for(int i=0; i<input.points.size(); i++)
-		{
-			avg_x += input.points[i].x;
-			if(min_x > input.points[i].x)
-				min_x = input.points[i].x;
-			if(max_x < input.points[i].x)
-				max_x = input.points[i].x;
-		}
-		ROS_ERROR_STREAM("input variation: " << avg_x << " " << min_x << " " << max_x);
-
 		for(int i=0; i<interest_points.points.size(); i++)
 		{
 			PointOutT histogram_point;
@@ -184,40 +173,59 @@ namespace pcl
 			histogram_point.y = interest_points.points[i].y;
 			histogram_point.z = interest_points.points[i].z;
 
-			int k = 300; 									// Consider switching to R, and also exposing choices for these to external manipulation
-			std::vector<int> nearest_indices(k);
-			std::vector<float> nearest_dist_squareds(k);
+			std::vector<int> nearest_indices(k_);
+			std::vector<float> nearest_dist_squareds(k_);
 
 			ROS_DEBUG_STREAM_THROTTLE(1, "[WallDamageEstimation] Working on a histogram point with index " << i);
 
-			if ( kdtree.nearestKSearch (interest_points_ptr->points[i], k, nearest_indices, nearest_dist_squareds) > 0 )
+			if ( kdtree.nearestKSearch (interest_points_ptr->points[i], k_, nearest_indices, nearest_dist_squareds) > 0 )
 			{
+				float avg_x = 0;
+				float avg_y = 0;
+				float avg_z = 0;
 				for (size_t j = 0; j < nearest_indices.size (); ++j)
 				{
-		  			int hist_ind_angle = floor( bins/2 * (input.points[nearest_indices[j]].angle_offset - min_angle_bin) / (max_angle_bin - min_angle_bin) );
+		  			int hist_ind_angle = floor( bins/2 * (input.points[nearest_indices[j]].angle_offset - angle_min_) / (angle_max_ - angle_min_) );
 		  			if(hist_ind_angle <= 0)
 		  				hist_ind_angle = 0;
 		  			else if(hist_ind_angle > bins)
 		  				hist_ind_angle = bins;
 		  			histogram_point.histogram[hist_ind_angle]++;
-		  			int hist_ind_dist = floor( bins/2 * (input.points[nearest_indices[j]].dist_offset - min_dist_bin) / (max_dist_bin - min_dist_bin) );
+		  			int hist_ind_dist = floor( bins/2 * (input.points[nearest_indices[j]].dist_offset - dist_min_) / (dist_max_ - dist_min_) );
 		  			if(hist_ind_dist <= 0)
 		  				hist_ind_dist = 0;
 		  			else if(hist_ind_dist > bins)
 		  				hist_ind_dist = bins;
 		  			histogram_point.histogram[hist_ind_dist+bins/2]++;
-					ROS_ERROR_STREAM(input.points[nearest_indices[j]].angle_offset << " " << input.points[nearest_indices[j]].dist_offset << " " << hist_ind_angle << " " << hist_ind_dist << " Current point: " << input.points[nearest_indices[j]].x << " " << input.points[nearest_indices[j]].y << " " << input.points[nearest_indices[j]].z << " Interest Point: " << interest_points_ptr->points[i].x <<  " " << interest_points_ptr->points[i].y <<  " " << interest_points_ptr->points[i].z);
 		  			histogram_point.angle_offset_avg += input.points[nearest_indices[j]].angle_offset;
 		  			histogram_point.dist_offset_avg += input.points[nearest_indices[j]].dist_offset;
+		  			avg_x += input.points[nearest_indices[j]].x;
+		  			avg_y += input.points[nearest_indices[j]].y;
+		  			avg_z += input.points[nearest_indices[j]].z;
 		  		}
+		  		histogram_point.angle_offset_avg /= k_;
+		  		histogram_point.dist_offset_avg /= k_;
 			}
 			else 
-				ROS_ERROR_STREAM("[WallDamageEstimation] KdTree Nearest Neighbor search failed! Unable to populate histogram for point " << i << "with XYZ values " << interest_points.points[i].x << " " << interest_points.points[i].y << " " << interest_points.points[i].z);
+				ROS_ERROR_STREAM_THROTTLE(0.1, "[WallDamageEstimation] KdTree Nearest Neighbor search failed! Unable to populate histogram for point " << i << "with XYZ values " << interest_points.points[i].x << " " << interest_points.points[i].y << " " << interest_points.points[i].z << ". This message throttled...");
 			output.points.push_back(histogram_point);
 		}
 
 		ROS_DEBUG_STREAM("[WallDamageEstimation] Successfully created histogram cloud of size " << output.points.size());
 	} 
+	template <typename PointInT, typename PointInterestT, typename PointOutT> void 
+	WallDamageHistogramEstimation<PointInT, PointInterestT, PointOutT>::setKSearch(const int k_search)
+	{
+		k_ = k_search;
+	}
+	template <typename PointInT, typename PointInterestT, typename PointOutT> void 
+	WallDamageHistogramEstimation<PointInT, PointInterestT, PointOutT>::setBinLimits(float angle_min, float angle_max, float dist_min, float dist_max)
+	{
+		angle_min_ = angle_min; 
+		angle_max_ = angle_max; 
+		dist_min_ = dist_min; 
+		dist_max_ = dist_max; 
+	}
 }
 
 #endif // IMPL_WALL_DAMAGE_ESTIMATION_

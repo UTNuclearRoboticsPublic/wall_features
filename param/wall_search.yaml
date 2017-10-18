@@ -1,4 +1,30 @@
 
+wall_features:
+  leaf_size:  0.02
+  debug: true
+  k_search_pointwise:   30
+  k_search_histogram:   70
+  # bin options
+  automatically_set_bins:   true
+  lower_angle_bin_limit:  0.0
+  upper_angle_bin_limit:  0.15
+  lower_dist_bin_limit:   0.2
+  upper_dist_bin_limit:   0.1
+  # ----- input options ----- 
+  input_from_bag:    false
+  # custom cloud generation options
+  min_x:    0.0
+  max_x:    1.0
+  min_y:    1
+  max_y:    1
+  min_z:    0.0
+  max_z:    1.0
+  x_range:  0.01
+  y_range:  0.01
+  z_range:  0.01
+  # bag input options
+  bag_name:     "stitched_pointcloud_1.bag"
+
 primitive_search:
   primitive_search:
     min_cloud_size:       50
@@ -6,16 +32,16 @@ primitive_search:
     task_list:            [ wall ]
     plane_options:
       max_iterations:   50
-      dist_threshold:   0.005       
+      dist_threshold:   0.1       
     cylinder_options:
       max_iterations:   50
       dist_threshold:   0.005
-    map_offset:     [0.0, 0.4, 0.0, 0.0, 0.0, 0.0]
+    map_offset:     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     tasks:
       wall:
         type:                   5     # Planar Segmentation
         max_iterations:         500
-        dist_threshold:         0.04      
+        dist_threshold:         0.1     
         should_publish:         true
         publish_topic:          wall
         should_publish_r:       true
@@ -26,6 +52,6 @@ primitive_search:
         offset_threshold:       0.06                # meteres
         check_orientation:      false
         check_distance:         false
-        expected_coefficients:  [0.0, 1.0, 0.0, 1.37]
+        expected_coefficients:  [0.0, 1.0, 0.0, 1.0] #[0.0, 1.0, 0.0, 1.37]
           # +/- thickness, +/- horizontal, +/- other 
-        clip_boundaries:        [-0.25, 0.25, -4.0, 4.0, 0.1, 2.5] #[-0.2, 0.2, -10.0, 10.0, -0.3, 5.0] 
+        clip_boundaries:        [-1, 1, -2.0, 2.0, -3, 3] #[-0.2, 0.2, -10.0, 10.0, -0.3, 5.0] 

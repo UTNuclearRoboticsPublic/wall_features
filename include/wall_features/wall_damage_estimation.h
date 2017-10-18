@@ -40,10 +40,13 @@ namespace pcl
         using Feature<PointInT, PointOutT>::search_parameter_; */
         typedef typename Feature<PointInT, PointOutT>::PointCloudOut PointCloudOut;
         typedef typename Feature<PointInT, PointOutT>::PointCloudConstPtr PointCloudConstPtr;
+        int k_;
+        float wall_coeffs_[4]; 			// Wall Coefficients
 
 		/** \brief Empty constructor. */
 		WallDamagePointwiseEstimation () 
 		{
+			k_ = 30;
 			//feature_name_ = "WallDamageEstimation";
 		};
 
@@ -63,6 +66,8 @@ namespace pcl
             vpz_ = input_->sensor_origin_.coeff (2);
           } */
         }
+        void setKSearch(int k_search);
+        void setWallCoefficients(const float wall_coeffs[4]);
 	};
 
 
@@ -84,10 +89,13 @@ namespace pcl
         using Feature<PointInT, PointOutT>::search_parameter_; */
         typedef typename Feature<PointInT, PointOutT>::PointCloudOut PointCloudOut;
         typedef typename Feature<PointInT, PointOutT>::PointCloudConstPtr PointCloudConstPtr;
+        int k_;
+        float angle_min_, angle_max_, dist_min_, dist_max_;	 	// Bin Limits
 
 		/** \brief Empty constructor. */
 		WallDamageHistogramEstimation () 
 		{
+			k_ = 30;
 			//feature_name_ = "WallDamageEstimation";
 		};
 
@@ -109,6 +117,8 @@ namespace pcl
             vpz_ = input_->sensor_origin_.coeff (2);
           } */
         }
+        void setKSearch(int k_search);
+        void setBinLimits(float angle_min, float angle_max, float dist_min, float dist_max);
 	};
 
 

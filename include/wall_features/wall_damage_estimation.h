@@ -22,8 +22,6 @@ typedef pcl::PointCloud<pcl::PointNormal>::Ptr PCNP;
 namespace pcl
 {
 
-
-
 	template <typename PointInT, typename PointOutT>
 	class WallDamagePointwiseEstimation//: public Feature<PointInT, PointOutT>
 	{

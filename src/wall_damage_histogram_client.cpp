@@ -38,7 +38,7 @@ int main (int argc, char **argv)
   ros::Publisher wall_pub = nh.advertise<sensor_msgs::PointCloud2>("wall_features/wall_cloud", 1);
   ros::Publisher voxelized_pub = nh.advertise<sensor_msgs::PointCloud2>("wall_features/voxelized_cloud", 1);
   ros::Publisher damage_pub = nh.advertise<sensor_msgs::PointCloud2>("wall_features/damage_cloud", 1);
-  ros::Publisher hsitogram_pub = nh.advertise<sensor_msgs::PointCloud2>("wall_features/histogram_cloud", 1);
+  ros::Publisher histogram_pub = nh.advertise<sensor_msgs::PointCloud2>("wall_features/histogram_cloud", 1);
 
   // ROS Msg Clouds
   sensor_msgs::PointCloud2 input_msg;
@@ -244,7 +244,7 @@ int main (int argc, char **argv)
     wall_pub.publish(wall_msg);
     voxelized_pub.publish(voxelized_msg);
     damage_pub.publish(damage_msg);
-    hsitogram_pub.publish(histogram_msg);
+    histogram_pub.publish(histogram_msg);
     primitive_pub.publish(wall_process);
     ros::Duration(1.0).sleep();
   }

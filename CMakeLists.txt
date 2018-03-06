@@ -12,6 +12,8 @@ find_package(catkin REQUIRED
   pcl_ros
   pcl_conversions
 	pointcloud_primitive_search
+  message_generation
+  cv_bridge
 )
 
 ## System dependencies are found with CMake's conventions
@@ -55,11 +57,10 @@ find_package(catkin REQUIRED
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  rasterizer_srv.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -69,10 +70,10 @@ find_package(catkin REQUIRED
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+ generate_messages(
+   DEPENDENCIES
+   std_msgs  sensor_msgs # Or other packages containing msgs
+ )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -125,6 +126,21 @@ add_dependencies(
 )
 target_link_libraries(
   wall_damage_histogram_client ${catkin_LIBRARIES}
+)
+
+add_executable(rasterizer src/rasterizer.cpp)
+add_dependencies(
+   rasterizer ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
+)
+target_link_libraries(
+  rasterizer ${catkin_LIBRARIES}
+)
+add_executable(rasterizer_client src/rasterizer_client.cpp)
+add_dependencies(
+   rasterizer_client ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
+)
+target_link_libraries(
+  rasterizer_client ${catkin_LIBRARIES}
 )
 
 ## Specify additional locations of header files

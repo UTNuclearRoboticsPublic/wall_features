@@ -1,0 +1,21 @@
+
+<launch>
+	<rosparam  command="load"  file="$(find wall_features)/param/rasterizer.yaml"/>
+	
+	<node
+		name    = "rasterizer"
+      	pkg     = "wall_features"
+      	type    = "rasterizer"
+      	output  = "screen"
+  	> 
+	</node>
+
+	<node
+		name    = "rasterizer_client"
+      	pkg     = "wall_features"
+      	type    = "rasterizer_client"
+      	output  = "screen"
+  	> 
+	</node>
+
+</launch>

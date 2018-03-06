@@ -1,0 +1,7 @@
+
+rasterizer:
+  pixel_width:            0.02
+  pixel_heigth:           0.02
+  outlier_filter_scale:   0.08
+  outlier_neighbors:      1
+  max_iterations:         10000

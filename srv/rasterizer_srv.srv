@@ -1,0 +1,22 @@
+
+sensor_msgs/PointCloud2 input_cloud
+
+# Outlier Removal 
+int32 rad_outlier_min_neighbors
+float32 outlier_filter_scale
+
+# Plane RANSAC Segmentation
+int32 max_iterations
+float32 threshold_distance
+
+# Raster Image
+float32 pixel_wdt
+float32 pixel_hgt
+
+---
+
+sensor_msgs/Image output_image
+sensor_msgs/PointCloud2 output_cloud
+float32 image_fill_ratio
+int32 image_wdt
+int32 image_hgt

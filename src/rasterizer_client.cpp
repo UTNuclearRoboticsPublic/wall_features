@@ -128,11 +128,7 @@ int main(int argc, char** argv)
 	cv_bridge::CvImagePtr grayscale_ptr(new cv_bridge::CvImage);
 	grayscale_ptr = cv_bridge::toCvCopy(srv.response.output_image, sensor_msgs::image_encodings::BGR8);
 	cv::cvtColor(grayscale_ptr->image, grayscale_ptr->image, cv::COLOR_BGR2GRAY);
-	grayscale_ptr->image = grayscale_ptr->image*2;
-	sensor_msgs::Image grayscale_msg;
-	grayscale_ptr->toImageMsg(grayscale_msg);
-	grayscale_msg.encoding = "mono8";
-	image_pub.publish(grayscale_msg);
+
 
 	//cv_bridge::CvImagePtr raster_image_ptr(new cv_bridge::CvImage);
 	cv_bridge::CvImagePtr gradient_image(new cv_bridge::CvImage);
@@ -243,6 +239,33 @@ int main(int argc, char** argv)
 	normals_ptr->toImageMsg(normals_msg);
 	normals_msg.encoding = "mono8";
 	normals_image_pub.publish(normals_msg);
+
+	float min_val = 100;
+	float max_val = 0;
+	for(int i=0; i<srv.response.image_hgt; i++)
+	{
+		for(int j=0; j<srv.response.image_wdt; j++)
+		{
+			if(min_val > grayscale_ptr->image.at<uchar>(i,j) && grayscale_ptr->image.at<uchar>(i,j) != 0)
+				min_val = grayscale_ptr->image.at<uchar>(i,j);
+			if(max_val < grayscale_ptr->image.at<uchar>(i,j))
+				max_val = grayscale_ptr->image.at<uchar>(i,j);
+		}
+	}
+	min_val = 20;
+	for(int i=0; i<srv.response.image_hgt; i++)
+	{
+		for(int j=0; j<srv.response.image_wdt; j++)
+		{
+			grayscale_ptr->image.at<uchar>(i,j) = (grayscale_ptr->image.at<uchar>(i,j)-min_val) * 255 / (max_val-min_val);
+		}
+	}
+	ROS_INFO_STREAM("range: " << min_val << " " << max_val);
+	sensor_msgs::Image grayscale_msg;
+	grayscale_ptr->toImageMsg(grayscale_msg);
+	grayscale_msg.encoding = "mono8";
+	image_pub.publish(grayscale_msg);
+
 
 	ros::Duration(3).sleep();
 

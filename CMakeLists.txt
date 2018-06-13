@@ -49,12 +49,11 @@ find_package(catkin REQUIRED
 ##   * uncomment the generate_messages entry below
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
-## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+# Generate messages in the 'msg' folder
+ add_message_files(
+   FILES
+   wall_image.msg
+ )
 
 ## Generate services in the 'srv' folder
 add_service_files(
@@ -72,7 +71,7 @@ add_service_files(
 ## Generate added messages and services with any dependencies listed here
  generate_messages(
    DEPENDENCIES
-   std_msgs  sensor_msgs # Or other packages containing msgs
+   std_msgs  sensor_msgs  geometry_msgs# Or other packages containing msgs
  )
 
 ################################################
@@ -143,6 +142,14 @@ target_link_libraries(
   rasterizer_client ${catkin_LIBRARIES}
 )
 
+add_executable(raster_analysis src/raster_analysis.cpp)
+add_dependencies(
+   raster_analysis ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
+)
+target_link_libraries(
+  raster_analysis ${catkin_LIBRARIES}
+)
+
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
@@ -179,6 +186,8 @@ include_directories(
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
+
+
 
 #############
 ## Install ##

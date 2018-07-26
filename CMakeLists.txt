@@ -58,7 +58,7 @@ find_package(catkin REQUIRED
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
-  rasterizer_srv.srv
+  rasterizer_service.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -105,8 +105,8 @@ add_service_files(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES wall_damage_estimation
-#  CATKIN_DEPENDS other_catkin_pkg
+  LIBRARIES wall_damage_estimation rasterizer_publisher
+  CATKIN_DEPENDS pointcloud_primitive_search cv_bridge
 #  DEPENDS system_lib
 )
 
@@ -141,6 +141,9 @@ add_dependencies(
 target_link_libraries(
   rasterizer_client ${catkin_LIBRARIES}
 )
+
+add_library(rasterizer_publisher src/rasterizer_publisher.cpp)
+add_dependencies(rasterizer_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_executable(raster_analysis src/raster_analysis.cpp)
 add_dependencies(

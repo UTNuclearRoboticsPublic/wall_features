@@ -75,7 +75,7 @@ int main (int argc, char **argv)
     std::string bag_name = "stitched_pointcloud.bag";
     nh.getParam("wall_features/bag_topic", bag_topic);
     nh.getParam("wall_features/bag_name", bag_name);
-    ROS_INFO_STREAM("[RegistrationClient] Loading clouds from bag files, using bag name: " << bag_name << " and topic name: " << bag_topic << ".");
+    ROS_INFO_STREAM("[WallFeatures] Loading clouds from bag files, using bag name: " << bag_name << " and topic name: " << bag_topic << ".");
     rosbag::Bag input_bag; 
     input_bag.open(bag_name, rosbag::bagmode::Read);
 
@@ -89,7 +89,7 @@ int main (int argc, char **argv)
         if (cloud_ptr != NULL)
             input_msg = *cloud_ptr;
         else
-          ROS_ERROR_STREAM("[RegistrationClient] Cloud caught for first cloud is null...");
+          ROS_ERROR_STREAM("[WallFeatures] Cloud caught for first cloud is null...");
     }
     input_bag.close();
 

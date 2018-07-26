@@ -25,7 +25,7 @@
 #include <pcl/filters/radius_outlier_removal.h>
 #include <pcl/filters/voxel_grid.h>
 
-#include "wall_features/rasterizer_srv.h"
+#include "wall_features/rasterizer_service.h"
 
 // CVBridge
 #include <cv_bridge/cv_bridge.h>
@@ -46,7 +46,7 @@ public:
 	typedef typename pcl::PointCloud<PointType>::Ptr PCP;
 
 	Rasterizer();
-	bool rasterizer_service(wall_features::rasterizer_srv::Request &req, wall_features::rasterizer_srv::Response &res);
+	bool rasterizer_service(wall_features::rasterizer_service::Request &req, wall_features::rasterizer_service::Response &res);
 
 private:
 

@@ -5,3 +5,6 @@ rasterizer:
   outlier_filter_scale:   0.08
   outlier_neighbors:      1
   max_iterations:         10000
+  load_from_bag:          true
+  bag_name:               /home/conor/catkin-ws/data/Fake_Walls/laser_mapper_local_dense_cloud1532008626.985387.bag
+  bag_topic:              /laser_stitcher/local_dense_cloud

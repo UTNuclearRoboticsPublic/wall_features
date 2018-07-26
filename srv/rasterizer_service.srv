@@ -16,6 +16,10 @@ float32 pixel_hgt
 ---
 
 sensor_msgs/Image output_image
+sensor_msgs/PointCloud2 outlierless_cloud
+sensor_msgs/PointCloud2 plane_cloud
+sensor_msgs/PointCloud2 rotated_cloud
+sensor_msgs/PointCloud2 transformed_cloud
 sensor_msgs/PointCloud2 output_cloud
 float32 image_fill_ratio
 int32 image_wdt

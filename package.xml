@@ -45,6 +45,11 @@
   <run_depend>libpcl-all</run_depend>
   <run_depend>message_runtime</run_depend>
 
+  <build_depend>pointcloud_primitive_search</build_depend>
+  <run_depend>pointcloud_primitive_search</run_depend>
+  <build_depend>cv_bridge</build_depend>
+  <run_depend>cv_bridge</run_depend>
+
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->

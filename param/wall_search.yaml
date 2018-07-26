@@ -39,7 +39,7 @@ primitive_search:
     map_offset:     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     tasks:
       wall:
-        type:                   4     # Planar Segmentation
+        type:                   plane_seg
         max_iterations:         500
         dist_threshold:         0.02     
         should_publish:         true

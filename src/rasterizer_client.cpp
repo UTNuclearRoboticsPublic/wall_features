@@ -21,7 +21,6 @@ int main(int argc, char** argv)
 
 	ros::NodeHandle nh;
 
-	bool load_from_bag = false;
 
 	ros::Publisher input_cloud_pub;
 	ros::Publisher output_cloud_pub;
@@ -47,16 +46,17 @@ int main(int argc, char** argv)
 	nh.param<int>("/rasterizer/outlier_neighbors", rad_outlier_min_neighbors, 1);
 	nh.param<int>("/rasterizer/max_iterations", max_iterations, 10000);
 
+	bool load_from_bag;
+	nh.param<bool>("/rasterizer/load_from_bag", load_from_bag, true);
 	// -------------------------------------------------------------------
 	// -------------------------- LOAD FROM BAG --------------------------
 	// -------------------------------------------------------------------
 	if(load_from_bag)
 	{
 		// ------------- Bag Names and Topics -------------
-		std::string cloud_bag_name = 	"/home/conor/catkin-ws/data/Tunnel_Scans/Nov_06_2017/fast_arm_fore.bag";
-		std::string cloud_bag_topic = 	"/laser_stitcher/local_dense_cloud";
-		std::string front_bag_topic = 	"front_camera/image_raw";
-		std::string rear_bag_topic = 	"rear_camera/image_raw";
+		std::string cloud_bag_name, cloud_bag_topic;
+		nh.param<std::string>("/rasterizer/bag_name", cloud_bag_name, "/home/conor/catkin-ws/data/Tunnel_Scans/Nov_06_2017/fast_arm_fore.bag");
+		nh.param<std::string>("/rasterizer/bag_topic", cloud_bag_topic, "/laser_mapper/local_dense_cloud");
 		ROS_INFO_STREAM("[RasterizerClient] Loading data from bag files.");
 
 		// ------------- First Bag - CLOUD -------------
@@ -94,8 +94,8 @@ int main(int argc, char** argv)
 		}
 	}
 
-	ros::ServiceClient client = nh.serviceClient<wall_features::rasterizer_srv>("rasterizer");
-	wall_features::rasterizer_srv srv;
+	ros::ServiceClient client = nh.serviceClient<wall_features::rasterizer_service>("rasterizer");
+	wall_features::rasterizer_service srv;
 	srv.request.input_cloud = input_cloud;
 	srv.request.rad_outlier_min_neighbors = rad_outlier_min_neighbors;
 	srv.request.max_iterations = max_iterations;
@@ -111,10 +111,10 @@ int main(int argc, char** argv)
 		ros::Duration(1.0).sleep();
 		// Call service
 		if( ! client.call(srv) )
-			ROS_WARN_STREAM("[RasterizerClient] Painting service call failed - prob not up yet");
+			ROS_WARN_STREAM("[RasterizerClient] Rasterizer service call failed - prob not up yet");
 		else
 		{	
-			ROS_INFO_STREAM("[RasterizerClient] Successfully called painting service.");
+			ROS_INFO_STREAM("[RasterizerClient] Successfully called rasterizer service.");
 			ROS_INFO_STREAM("[RasterizerClient]   Cloud Size: " << srv.response.output_cloud.height*srv.response.output_cloud.width);
 			ros::Duration(0.5).sleep();
 			break;

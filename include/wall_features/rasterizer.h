@@ -1,4 +1,7 @@
 
+#ifndef RASTERIZER_H
+#define RASTERIZER_H
+
 #include <ros/ros.h>
 // Bags
 #include <rosbag/bag.h>
@@ -51,3 +54,5 @@ public:
 private:
 
 };
+
+#endif //RASTERIZER_H

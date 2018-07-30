@@ -227,10 +227,20 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 	vg.setLeafSize(req.pixel_wdt, wall_depth, req.pixel_hgt); 	
 	// Apply Filter and return Voxelized Data
 	vg.filter(*voxelized_cloud_ptr);
+	
+	// ------------------------------------------------------------------------
+	// ------------------------------ Flip Cloud ------------------------------
+	// ------------------------------------------------------------------------
+	// For some reason, raster images are currently coming out backwards - flip them left/right here
+	//for(int i=0; i<voxelized_cloud_ptr->points.size(); i++)
+	//{	
+	//	voxelized_cloud_ptr->points[i].x *= -1; 
+	//}
 	toROSMsg(*voxelized_cloud_ptr, res.output_cloud);
 	res.output_cloud.header.stamp = req.input_cloud.header.stamp;
 	res.output_cloud.header.frame_id = req.input_cloud.header.frame_id;
-	ROS_INFO_STREAM("[Rasterizer] Voxel filter with leaf size " << req.pixel_wdt << " x " << wall_depth << " x " << req.pixel_hgt << " applied to plane cloud. Voxelized size is " << voxelized_cloud_ptr->size());
+
+	ROS_INFO_STREAM("[Rasterizer] Voxel filter with leaf size " << req.pixel_wdt << " x " << wall_depth << " x " << req.pixel_hgt << " applied to plane cloud. Voxelized size is " << voxelized_cloud_ptr->size());	
 
 	// ------------------------------------------------------------------------
 	// ---------------------------- Rasterize Cloud ---------------------------
@@ -243,6 +253,7 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 	cv::Mat img(image_hgt,image_wdt,CV_8UC3,cv::Scalar(0,0,0));
 	// Check which pixels are occupied
 	bool occupied[image_hgt][image_wdt];
+	ROS_INFO_STREAM("floop");
 	for(int i=0; i<image_hgt; i++)
 	{
 		for(int j=0; j<image_wdt; j++)
@@ -253,6 +264,7 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 			img.at<cv::Vec3b>(i,j)[0] = 0;		// B
 		}
 	}
+	ROS_INFO_STREAM("floop");
 
 	// Build Image
 	res.image_fill_ratio = 0;
@@ -297,6 +309,7 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 		// Note that we found another good pixel
 		res.image_fill_ratio++;
 	}
+	ROS_INFO_STREAM("floop");
 	res.image_fill_ratio /= (image_wdt*image_hgt);
 	img.copyTo(wall_cv->image);
 	//wall_cv->encoding = cv_bridge::CV_8UC3; 
@@ -305,8 +318,19 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 	res.output_image.encoding = sensor_msgs::image_encodings::BGR8;
 	res.image_wdt = image_wdt;
 	res.image_hgt = image_hgt;
-	ROS_INFO_STREAM("[Rasterizer] Rasterized cloud built. Image size is " << image_wdt << " by " << image_hgt);
 
+	res.depth_min = min_y - mean_y;
+	res.depth_max = max_y - mean_y;
+	for (int i=0; i < coefficients->values.size(); i++)
+		res.plane_coefficients.push_back(coefficients->values[i]);
+
+	ros::Duration(3).sleep();
+
+	ROS_INFO_STREAM("[Rasterizer] Rasterized cloud built. Image size is " << image_wdt << " by " << image_hgt << ", with min and max depth at " << res.depth_min << " and " << res.depth_max);
+
+	ros::Duration(3).sleep();
+
+	return true;
 }
 
 int main(int argc, char** argv)

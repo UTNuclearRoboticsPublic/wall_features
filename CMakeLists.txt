@@ -59,6 +59,7 @@ find_package(catkin REQUIRED
 add_service_files(
   FILES
   rasterizer_service.srv
+  wall_change.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -151,6 +152,14 @@ add_dependencies(
 )
 target_link_libraries(
   raster_analysis ${catkin_LIBRARIES}
+)
+
+add_executable(wall_change_estimator src/wall_change_estimator.cpp)
+add_dependencies(
+   wall_change_estimator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
+)
+target_link_libraries(
+  wall_change_estimator ${catkin_LIBRARIES}
 )
 
 ## Specify additional locations of header files

@@ -24,3 +24,6 @@ sensor_msgs/PointCloud2 output_cloud
 float32 image_fill_ratio
 int32 image_wdt
 int32 image_hgt
+float32 depth_max
+float32 depth_min
+float32[] plane_coefficients

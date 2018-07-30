@@ -1,0 +1,23 @@
+
+sensor_msgs/Image first_image
+sensor_msgs/Image second_image
+
+# color scaling of input images
+float32 first_image_min
+float32 first_image_max
+float32 second_image_min
+float32 second_image_max
+
+float32 first_image_coefficients
+float32 second_image_coefficients
+
+---
+
+sensor_msgs/Image difference_image
+
+float32 image_min
+float32 image_max
+float32 image_mean
+float32 image_mean_abs
+
+float32 output_image_coefficients

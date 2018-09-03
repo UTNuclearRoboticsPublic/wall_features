@@ -2,6 +2,7 @@
 sensor_msgs/PointCloud2 input_cloud
 
 # Outlier Removal 
+bool outlier_filter
 int32 rad_outlier_min_neighbors
 float32 outlier_filter_scale
 

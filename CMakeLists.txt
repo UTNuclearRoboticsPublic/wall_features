@@ -1,19 +1,24 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(wall_features)
 
-## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+## Add support for C++11, supported in ROS Kinetic and newer
+ add_definitions(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED
 	roscpp
-  pcl_ros
-  pcl_conversions
-	pointcloud_primitive_search
+  std_msgs 
+  geometry_msgs 
+  sensor_msgs 
+  pointcloud_primitive_search
+  pointcloud_processing_server
+  pointcloud_registration_server
   message_generation
   cv_bridge
+  pcl_ros
+  pcl_conversions
 )
 
 ## System dependencies are found with CMake's conventions
@@ -60,6 +65,8 @@ add_service_files(
   FILES
   rasterizer_service.srv
   wall_change.srv
+  wall_change_pointcloud.srv
+  wall_damage_service.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -107,7 +114,7 @@ add_service_files(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES wall_damage_estimation rasterizer_publisher
-  CATKIN_DEPENDS pointcloud_primitive_search cv_bridge
+  CATKIN_DEPENDS cv_bridge
 #  DEPENDS system_lib
 )
 
@@ -116,6 +123,8 @@ catkin_package(
 ###########
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${pcl_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
 
 add_library(wall_damage_estimation src/wall_damage_estimation.cpp)
 add_dependencies(wall_damage_estimation ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -162,12 +171,14 @@ target_link_libraries(
   wall_change_estimator ${catkin_LIBRARIES}
 )
 
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
-include_directories(
-# include
-# ${catkin_INCLUDE_DIRS}
+add_executable(wall_damage_estimator_server src/wall_damage_estimator_server.cpp)
+add_dependencies(
+   wall_damage_estimator_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS}
 )
+target_link_libraries(
+  wall_damage_estimator_server ${catkin_LIBRARIES}
+)
+
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}

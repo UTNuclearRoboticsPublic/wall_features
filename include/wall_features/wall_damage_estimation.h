@@ -15,30 +15,43 @@
 #include <pcl/features/normal_3d.h>
 #include <pcl/filters/filter.h>
 
-typedef pcl::PointXYZRGB PCLPoint;
-typedef pcl::PointCloud<pcl::PointNormal> PCN;
-typedef pcl::PointCloud<pcl::PointNormal>::Ptr PCNP;
+#include <pcl/impl/pcl_base.hpp>
+#include <pcl/kdtree/impl/kdtree_flann.hpp>
+#include <pcl/search/impl/kdtree.hpp>
+#include <pcl/search/impl/organized.hpp>
+#include <pcl/features/impl/normal_3d.hpp>
+#include <pcl/features/impl/normal_3d_omp.hpp>
+
+#include <set>
 
 namespace pcl
 {
 
-	template <typename PointInT, typename PointOutT>
-	class WallDamagePointwiseEstimation//: public Feature<PointInT, PointOutT>
-	{
-	public:
-		typedef boost::shared_ptr<WallDamagePointwiseEstimation<PointInT,PointOutT> > Ptr;
-		typedef boost::shared_ptr<const WallDamagePointwiseEstimation<PointInT,PointOutT> > ConstPtr;
-		/*using Feature<PointInT, PointOutT>::feature_name_;
+    template <typename PointInT, typename PointNormalT, typename PointOutT>
+    class WallDamagePointwiseEstimation: public FeatureFromNormals<PointInT, PointNormalT, PointOutT>
+    {
+    public:
+        typedef typename pcl::PointCloud<PointInT> PC;
+        typedef typename pcl::PointCloud<PointInT>::Ptr PCP;
+        typedef typename pcl::PointCloud<PointNormalT> PCN;
+        typedef typename pcl::PointCloud<PointNormalT>::Ptr PCNP;
+
+        typedef typename pcl::search::KdTree<PointInT> KDTree;
+        typedef typename pcl::search::KdTree<PointInT>::Ptr KDTreePtr;
+
+		typedef boost::shared_ptr<WallDamagePointwiseEstimation<PointInT,PointNormalT,PointOutT> > Ptr;
+		typedef boost::shared_ptr<const WallDamagePointwiseEstimation<PointInT,PointNormalT,PointOutT> > ConstPtr;
+		using Feature<PointInT, PointOutT>::feature_name_;
         using Feature<PointInT, PointOutT>::getClassName;
         using Feature<PointInT, PointOutT>::indices_;
         using Feature<PointInT, PointOutT>::input_;
         using Feature<PointInT, PointOutT>::surface_;
         using Feature<PointInT, PointOutT>::k_;
         using Feature<PointInT, PointOutT>::search_radius_;
-        using Feature<PointInT, PointOutT>::search_parameter_; */
+        using Feature<PointInT, PointOutT>::search_parameter_; 
         typedef typename Feature<PointInT, PointOutT>::PointCloudOut PointCloudOut;
         typedef typename Feature<PointInT, PointOutT>::PointCloudConstPtr PointCloudConstPtr;
-        int k_;
+        //int k_;
         float wall_coeffs_[4]; 			// Wall Coefficients
 
 		/** \brief Empty constructor. */
@@ -72,22 +85,22 @@ namespace pcl
 
 
 	template <typename PointInT, typename PointInterestT, typename PointOutT>
-	class WallDamageHistogramEstimation//: public Feature<PointInT, PointOutT>
+	class WallDamageHistogramEstimation: public Feature<PointInT, PointOutT>
 	{
 	public:
 		typedef boost::shared_ptr<WallDamageHistogramEstimation<PointInT,PointInterestT,PointOutT> > Ptr;
 		typedef boost::shared_ptr<const WallDamageHistogramEstimation<PointInT,PointInterestT,PointOutT> > ConstPtr;
-		/*using Feature<PointInT, PointOutT>::feature_name_;
+		using Feature<PointInT, PointOutT>::feature_name_;
         using Feature<PointInT, PointOutT>::getClassName;
         using Feature<PointInT, PointOutT>::indices_;
         using Feature<PointInT, PointOutT>::input_;
         using Feature<PointInT, PointOutT>::surface_;
         using Feature<PointInT, PointOutT>::k_;
         using Feature<PointInT, PointOutT>::search_radius_;
-        using Feature<PointInT, PointOutT>::search_parameter_; */
+        using Feature<PointInT, PointOutT>::search_parameter_; 
         typedef typename Feature<PointInT, PointOutT>::PointCloudOut PointCloudOut;
         typedef typename Feature<PointInT, PointOutT>::PointCloudConstPtr PointCloudConstPtr;
-        int k_;
+        //int k_;
         float angle_min_, angle_max_, dist_min_, dist_max_;	 	// Bin Limits
 
 		/** \brief Empty constructor. */

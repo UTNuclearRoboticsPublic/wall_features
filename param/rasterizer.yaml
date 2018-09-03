@@ -1,10 +1,11 @@
 
 rasterizer:
-  pixel_width:            0.04
-  pixel_height:           0.04
-  outlier_filter_scale:   0.08
+  pixel_width:            0.006
+  pixel_height:           0.006
+  outlier_filter:         false
+  outlier_filter_scale:   0.01
   outlier_neighbors:      1
   max_iterations:         10000
   load_from_bag:          true
-  bag_name:               /home/conor/catkin-ws/data/Fake_Walls/laser_mapper_local_dense_cloud1532008626.985387.bag
-  bag_topic:              /laser_stitcher/local_dense_cloud
+  bag_name:               /home/conor/ros_data/Fake_Walls/Segmented/screwy/1dps.bag  # Faro/segmented_screwy.bag
+  bag_topic:              /target_wall

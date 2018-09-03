@@ -17,11 +17,11 @@ namespace pcl
 // -----------------------------------------------------------------------------------------------------------------------------
 // ------------------------------------------------ Pointwise Damage Estimation ------------------------------------------------
 // -----------------------------------------------------------------------------------------------------------------------------
-	template <typename PointInT, typename PointOutT> void WallDamagePointwiseEstimation<PointInT, PointOutT>::computeFeature (pcl::PointCloud<PointOutT> &output) { }
+	template <typename PointInT, typename PointNormalT, typename PointOutT> void WallDamagePointwiseEstimation<PointInT, PointNormalT, PointOutT>::computeFeature (pcl::PointCloud<PointOutT> &output) { }
 	//template <typename PointInT> void setInputCloud(const pcl::PointCloud<PointInT> &input);
 
-	template <typename PointInT, typename PointOutT> void 
-	WallDamagePointwiseEstimation<PointInT, PointOutT>::compute (const pcl::PointCloud<PointInT> &input, 
+	template <typename PointInT, typename PointNormalT, typename PointOutT> void 
+	WallDamagePointwiseEstimation<PointInT, PointNormalT, PointOutT>::compute (const pcl::PointCloud<PointInT> &input, 
 																pcl::PointCloud<PointOutT> &output)
 	{ 
 		if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug) )
@@ -38,13 +38,13 @@ namespace pcl
 		// Note that this obviously only has to be done once per input cloud 
 		//   Remove NaNs from input (for safety - had crashes before due to NaN in input)
 		std::vector<int> nan_indices;
-		pcl::PointCloud<PCLPoint>::Ptr nanless_input (new pcl::PointCloud<PCLPoint>());
+		PCP nanless_input (new PC());
 		pcl::removeNaNFromPointCloud(input, *nanless_input, nan_indices); 
 		ROS_DEBUG_STREAM("[WallDamageEstimation] Removed NaNs from input - had " << input.points.size()-nanless_input->points.size() << " NaN entries.");
 		//   Generate cloud, initialize KdTree and NormEst objects
 		PCNP points_with_normals (new PCN);
-		pcl::NormalEstimation<PCLPoint, pcl::PointNormal> norm_est;
-		pcl::search::KdTree<PCLPoint>::Ptr tree (new pcl::search::KdTree<PCLPoint> ());
+		pcl::NormalEstimation<PointInT, PointNormalT> norm_est;
+		KDTreePtr tree (new KDTree ());
 		norm_est.setSearchMethod (tree);
 		norm_est.setKSearch (30); 		// Do this more smartly later, maybe? Multiple kinds of wall_damage_estimation point types depending on K used, or set this as an input?
 		ROS_DEBUG_STREAM("[WallDamageEstimation] Initialized norm_est object.");
@@ -75,29 +75,30 @@ namespace pcl
 			float wall_normal_mag = sqrt(pow(wall_normal.normal_x,2) + pow(wall_normal.normal_y,2) + pow(wall_normal.normal_z,2));
 			float point_normal_mag = sqrt(pow(point.normal_x,2) + pow(point.normal_y,2) + pow(point.normal_z,2));
 			point.angle_offset = acos(dot_product/wall_normal_mag/point_normal_mag);	// Absolute value of the angle difference between plane and point normal (assuming acos -> 0 to pi)
-
+			if(point.angle_offset < 0)
+				ROS_INFO_STREAM("oops " << point.angle_offset << " " << dot_product << " " << point.normal_x << " " << point.normal_y << " " << point.normal_z);
 			// Move angle range from (0 to pi) to (-pi/2 to pi/2) --> puts 'parallel to wall' (ie angle=0) at middle, not edges  
 			if(point.angle_offset > 1.570796)
-				point.angle_offset = point.angle_offset-3.141593;
+				point.angle_offset = 3.141593-point.angle_offset;
 
 			// Distance between point and plane
 			pcl::PointXYZ point_to_wall;			// Vector from the current point to the wall normal-from-origin point
-			point_to_wall.x = point.x - wall_normal.normal_x*wall_distance;
-			point_to_wall.y = point.y - wall_normal.normal_y*wall_distance;
-			point_to_wall.z = point.z - wall_normal.normal_z*wall_distance;
+			point_to_wall.x = point.x + wall_normal.normal_x*wall_distance;
+			point_to_wall.y = point.y + wall_normal.normal_y*wall_distance;
+			point_to_wall.z = point.z + wall_normal.normal_z*wall_distance;
 			point.dist_offset = (point_to_wall.x*wall_normal.normal_x + point_to_wall.y*wall_normal.normal_y + point_to_wall.z*wall_normal.normal_z)/wall_normal_mag;
 
 			output.points.push_back(point);
 		}
 		ROS_DEBUG_STREAM("[WallDamageEstimation] Found normal and angular offsets for all points in input cloud.");
 	} 
-	template <typename PointInT, typename PointOutT> void 
-	WallDamagePointwiseEstimation<PointInT, PointOutT>::setKSearch(const int k_search)
+	template <typename PointInT, typename PointNormalT, typename PointOutT> void 
+	WallDamagePointwiseEstimation<PointInT, PointNormalT, PointOutT>::setKSearch(const int k_search)
 	{
 		k_ = k_search;
 	}
-	template <typename PointInT, typename PointOutT> void 
-	WallDamagePointwiseEstimation<PointInT, PointOutT>::setWallCoefficients(const float wall_coeffs[4])
+	template <typename PointInT, typename PointNormalT, typename PointOutT> void 
+	WallDamagePointwiseEstimation<PointInT, PointNormalT, PointOutT>::setWallCoefficients(const float wall_coeffs[4])
 	{
 		wall_coeffs_[0] = wall_coeffs[0];
 		wall_coeffs_[1] = wall_coeffs[1];
@@ -116,10 +117,10 @@ namespace pcl
 	WallDamageHistogramEstimation<PointInT, PointInterestT, PointOutT>::compute (const pcl::PointCloud<PointInT> &input, 
 																pcl::PointCloud<PointOutT> &output)
 	{
-		pcl::PointCloud<pcl::PointXYZRGB> interest_points;
+		pcl::PointCloud<PointInterestT> interest_points;
 		for(int i=0; i<input.points.size(); i++)
 		{
-			pcl::PointXYZRGB point;
+			PointInterestT point;
 			point.x = input.points[i].x;
 			point.y = input.points[i].y;
 			point.z = input.points[i].z;

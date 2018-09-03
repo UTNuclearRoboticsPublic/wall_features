@@ -70,20 +70,41 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 {
 	ROS_INFO_STREAM("[Rasterizer] Received service call. Input cloud is of size " << req.input_cloud.height*req.input_cloud.width);
 
+	PCP input_cloud_ptr(new PC);
+	pcl::fromROSMsg(req.input_cloud, *input_cloud_ptr);
+
+	// ------------------------------------------------------------------------
+	// ----------------------- Initially Voxelize Cloud -----------------------
+	// ------------------------------------------------------------------------
+	// Output Clouds
+	PCP initial_voxelized_cloud_ptr(new PC());
+	sensor_msgs::PointCloud2 initial_voxelized_cloud;
+	// Create the filtering object, set parameters
+	pcl::VoxelGrid<PointType> vg_init;
+	vg_init.setInputCloud(input_cloud_ptr);
+	vg_init.setLeafSize(req.pixel_wdt/2.5, req.pixel_hgt/2.5, req.pixel_hgt/2.5); 	
+	// Apply Filter and return Voxelized Data
+	vg_init.filter(*initial_voxelized_cloud_ptr);
+	pcl::toROSMsg(*initial_voxelized_cloud_ptr, initial_voxelized_cloud);
+	ROS_INFO_STREAM("[Rasterizer] Initial voxel filter applied to cloud. New size is " << initial_voxelized_cloud_ptr->size());
+
     // ------------------------------------------------------------------------
 	// --------------------------- Remove Outliers ----------------------------
 	// ------------------------------------------------------------------------
 	pcl::RadiusOutlierRemoval<pcl::PointXYZ> filter;
-	PCP input_cloud_ptr(new PC);
 	PCP outlierless_cloud_ptr(new PC);
-	pcl::fromROSMsg(req.input_cloud, *input_cloud_ptr);
-	filter.setInputCloud(input_cloud_ptr);
-	filter.setRadiusSearch(req.outlier_filter_scale);
-	filter.setMinNeighborsInRadius(req.rad_outlier_min_neighbors);
-	filter.setKeepOrganized(false);
-	// Perform filtering
-	filter.filter(*outlierless_cloud_ptr);	
-	ROS_INFO_STREAM("[Rasterizer] Outlier filter of size " << req.outlier_filter_scale << " applied to plane cloud. Filtered size is " << outlierless_cloud_ptr->size());
+	if(req.outlier_filter)
+	{
+		filter.setInputCloud(initial_voxelized_cloud_ptr);
+		filter.setRadiusSearch(req.outlier_filter_scale);
+		filter.setMinNeighborsInRadius(req.rad_outlier_min_neighbors);
+		filter.setKeepOrganized(false);
+		// Perform filtering
+		filter.filter(*outlierless_cloud_ptr);	
+		ROS_INFO_STREAM("[Rasterizer] Outlier filter of size " << req.outlier_filter_scale << " applied to plane cloud. Filtered size is " << outlierless_cloud_ptr->size());
+	}
+	else
+		*outlierless_cloud_ptr = *initial_voxelized_cloud_ptr;
 	pcl::toROSMsg(*outlierless_cloud_ptr, res.outlierless_cloud);
 
 	// ------------------------------------------------------------------------
@@ -126,94 +147,21 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
     // ------------------------------------------------------------------------
 	// -------------------------- Transform Cloud --------------------------
 	// ------------------------------------------------------------------------
-	// ----------- Finding Rotation ----------- 
-	// Output Clouds
-	PCP rotated_plane_ptr(new PC()); 
-	// Rotation --> make normal horizontal
-	Eigen::Vector3f input_cloud_norm(coefficients->values[0], coefficients->values[1], coefficients->values[2]);
-	Eigen::Vector3f input_cloud_norm_horz(coefficients->values[0], coefficients->values[1], 0.0); 
-	ROS_DEBUG_STREAM("[Rasterizer] Plane Normal: " << " " << coefficients->values[0] << " " << coefficients->values[1] << " " << coefficients->values[2]);
-	//input_cloud_norm_horz.cast<float>();
-	Eigen::Quaternion<float> horz_rot;
-	horz_rot = fromTwoVectorsStable(input_cloud_norm, input_cloud_norm_horz);
-	ROS_DEBUG_STREAM("[Rasterizer] Plane Rotation to Horz (Quat): " << horz_rot.x() << " " << horz_rot.y() << " " << horz_rot.z() << " " << horz_rot.w());
-	// Rotation --> make normal in Y+
-	//   Either use positive or negative Y axis, depending on whether plane normal is mostly + or - Y
-	//   Otherwise, plane will sometimes get flipped 180 degrees for no reason, since for a plane there's no difference between +/- normal
-	//   Would be nice if PCL defaulted to, for example, return the normal which pointed away from the origin, or some other convention,
-	//     but as of June 2018 they don't - it's just random (from RANSAC)
-	float y_axis_direction;
-	if(coefficients->values[1] > 0)
-		y_axis_direction = 1.0;
-	else y_axis_direction = -1.0;
-	Eigen::Vector3f y_axis(0.0, y_axis_direction, 0.0);
-	Eigen::Quaternion<float> onto_y_rot;
-	onto_y_rot = fromTwoVectorsStable(input_cloud_norm_horz, y_axis); 
-	ROS_DEBUG_STREAM("[Rasterizer] Plane Rotation to Y (Quat): " << onto_y_rot.x() << " " << onto_y_rot.y() << " " << onto_y_rot.z() << " " << onto_y_rot.w());
-	// Build Transform
-	Eigen::Quaternion<float> final_rotation = horz_rot * onto_y_rot;
-	final_rotation.normalize();
-	ROS_DEBUG_STREAM("[Rasterizer] Final Plane Rotation (Quat): " << final_rotation.x() << " " << final_rotation.y() << " " << final_rotation.z() << " " << final_rotation.w());
-	geometry_msgs::TransformStamped cloud_rotation; 
-	cloud_rotation.header = req.input_cloud.header;
-	cloud_rotation.transform.rotation.x = float(final_rotation.x());
-	cloud_rotation.transform.rotation.y = float(final_rotation.y());
-	cloud_rotation.transform.rotation.z = float(final_rotation.z());
-	cloud_rotation.transform.rotation.w = float(final_rotation.w());
-	cloud_rotation.transform.translation.x = 0;
-	cloud_rotation.transform.translation.y = 0;
-	cloud_rotation.transform.translation.z = 0;
-	// ----------- Performing Rotation -----------
-	tf2::doTransform (res.plane_cloud, res.rotated_cloud, cloud_rotation);  	// transforms input_pc2 into process_message
-	res.rotated_cloud.header.stamp = req.input_cloud.header.stamp;
-	res.rotated_cloud.header.frame_id = req.input_cloud.header.frame_id;
+	// Rotate cloud to be on YZ plane
+	res.rotated_cloud = PointcloudUtilities::rotatePlaneToXZ(initial_voxelized_cloud, coefficients->values);
+	PCP rotated_plane_ptr(new PC());
 	pcl::fromROSMsg(res.rotated_cloud, *rotated_plane_ptr);
-	ROS_INFO_STREAM("[Rasterizer] Plane cloud rotated. Size is " << res.rotated_cloud.height*res.rotated_cloud.width << "; rotation quaternion coefficients: " << final_rotation.x() << " " << final_rotation.y() << " " << final_rotation.z() << " " << final_rotation.w());
-
 	// ----------- Finding Translation ----------- 
 	// Output Clouds
 	PCP transformed_plane_ptr(new PC());
 	// Find Translation
-	float min_x = rotated_plane_ptr->points[0].x;
-	float max_x = rotated_plane_ptr->points[0].x;
-	float min_z = rotated_plane_ptr->points[0].z;
-	float max_z = rotated_plane_ptr->points[0].z;
-	float mean_y = 0;
-	float min_y = rotated_plane_ptr->points[0].y;
-	float max_y = rotated_plane_ptr->points[0].y;
-	for(int i=1; i<rotated_plane_ptr->points.size(); i++)
-	{
-		if(rotated_plane_ptr->points[i].x < min_x)
-			min_x = rotated_plane_ptr->points[i].x;
-		if(rotated_plane_ptr->points[i].x > max_x)
-			max_x = rotated_plane_ptr->points[i].x;
-		if(rotated_plane_ptr->points[i].z < min_z)
-			min_z = rotated_plane_ptr->points[i].z;
-		if(rotated_plane_ptr->points[i].z > max_z)
-			max_z = rotated_plane_ptr->points[i].z;
-		if(rotated_plane_ptr->points[i].y < min_y)
-			min_y = rotated_plane_ptr->points[i].y;
-		if(rotated_plane_ptr->points[i].y > max_y)
-			max_y = rotated_plane_ptr->points[i].y;
-		mean_y += rotated_plane_ptr->points[i].y;
-	}
-	mean_y /= rotated_plane_ptr->points.size();
-	// Build Transform
-	geometry_msgs::TransformStamped cloud_translation;
-	cloud_translation.transform.rotation.x = 0;
-	cloud_translation.transform.rotation.y = 0;
-	cloud_translation.transform.rotation.z = 0;
-	cloud_translation.transform.rotation.w = 0;
-	cloud_translation.transform.translation.x = -min_x;
-	cloud_translation.transform.translation.y = -mean_y;
-	cloud_translation.transform.translation.z = -max_z;
-	// ----------- Performing Translation -----------
-	tf2::doTransform (res.rotated_cloud, res.transformed_cloud, cloud_translation);  	// transforms input_pc2 into process_message
+	res.transformed_cloud = PointcloudUtilities::translatePlaneToXZ(res.rotated_cloud);
+	float min_x, max_x, min_y, max_y, min_z, max_z;
+	PointcloudUtilities::cloudLimits(res.rotated_cloud, &min_x, &max_x, &min_y, &max_y, &min_z, &max_z);
+	float mean_y = PointcloudUtilities::meanValue(res.rotated_cloud, 'y');
 	res.transformed_cloud.header.stamp = req.input_cloud.header.stamp;
 	res.transformed_cloud.header.frame_id = req.input_cloud.header.frame_id;
 	pcl::fromROSMsg(res.transformed_cloud, *transformed_plane_ptr);
-
-	ROS_INFO_STREAM("[Rasterizer] Plane cloud translated. Size is " << res.transformed_cloud.height*res.transformed_cloud.width << "; translation coefficients: " << -min_x << " " << -mean_y << " " << -max_z);
 
 	// ------------------------------------------------------------------------
 	// ---------------------------- Voxelize Cloud ----------------------------
@@ -223,7 +171,7 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 	// Create the filtering object, set parameters
 	pcl::VoxelGrid<PointType> vg;
 	vg.setInputCloud(transformed_plane_ptr);
-	float wall_depth = .2;  		// Voxel width in Y direction just needs to be arbitrarily large relative to wall depth variation
+	float wall_depth = 0.2;  		// Voxel width in Y direction just needs to be arbitrarily large relative to wall depth variation
 	vg.setLeafSize(req.pixel_wdt, wall_depth, req.pixel_hgt); 	
 	// Apply Filter and return Voxelized Data
 	vg.filter(*voxelized_cloud_ptr);
@@ -253,7 +201,6 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 	cv::Mat img(image_hgt,image_wdt,CV_8UC3,cv::Scalar(0,0,0));
 	// Check which pixels are occupied
 	bool occupied[image_hgt][image_wdt];
-	ROS_INFO_STREAM("floop");
 	for(int i=0; i<image_hgt; i++)
 	{
 		for(int j=0; j<image_wdt; j++)
@@ -264,7 +211,6 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 			img.at<cv::Vec3b>(i,j)[0] = 0;		// B
 		}
 	}
-	ROS_INFO_STREAM("floop");
 
 	// Build Image
 	res.image_fill_ratio = 0;
@@ -309,7 +255,6 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 		// Note that we found another good pixel
 		res.image_fill_ratio++;
 	}
-	ROS_INFO_STREAM("floop");
 	res.image_fill_ratio /= (image_wdt*image_hgt);
 	img.copyTo(wall_cv->image);
 	//wall_cv->encoding = cv_bridge::CV_8UC3; 

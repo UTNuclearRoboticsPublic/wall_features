@@ -7,14 +7,6 @@
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
 #include <boost/foreach.hpp>
-// Pointcloud Processing Server
-#include <pointcloud_processing_server/pointcloud_process_publisher.h>
-#include <pointcloud_processing_server/pointcloud_process.h>
-#include <pointcloud_processing_server/pointcloud_task_creation.h>
-// Primitive Search
-#include <pointcloud_primitive_search/primitive_process.h>
-#include <pointcloud_primitive_search/primitive_process_creation.h>
-#include <pointcloud_primitive_search/primitive_process_publisher.h>
 
 #include <tf2/transform_datatypes.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
@@ -29,6 +21,8 @@
 #include <pcl/filters/voxel_grid.h>
 
 #include "wall_features/rasterizer_service.h"
+
+#include <pointcloud_processing_server/pointcloud_transforms.h>
 
 // CVBridge
 #include <cv_bridge/cv_bridge.h>

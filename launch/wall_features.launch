@@ -1,0 +1,29 @@
+
+<launch>
+	<rosparam  command="load"  file="$(find wall_features)/param/wall_search.yaml"/>
+	
+	<node
+		name    = "wall_damage_histogram_client"
+      	pkg     = "wall_features"
+      	type    = "wall_damage_histogram_client"
+      	output  = "screen"
+  	> 
+	</node>
+
+	<node
+		name    = "pointcloud_processing_server"
+      	pkg     = "pointcloud_processing_server"
+      	type    = "pointcloud_processing_server"
+      	output  = "screen"
+  	> 
+	</node>
+
+	<node
+		name    = "primitive_search"
+      	pkg     = "pointcloud_primitive_search"
+      	type    = "primitive_search"
+      	output  = "screen"
+  	> 
+	</node>
+
+</launch>

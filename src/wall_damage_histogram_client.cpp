@@ -36,14 +36,18 @@ int main (int argc, char **argv)
   // Publishers for Clouds
   ros::Publisher input_pub = nh.advertise<sensor_msgs::PointCloud2>("wall_features/input_cloud", 1);
   ros::Publisher wall_pub = nh.advertise<sensor_msgs::PointCloud2>("wall_features/wall_cloud", 1);
-  ros::Publisher voxelized_pub = nh.advertise<sensor_msgs::PointCloud2>("wall_features/voxelized_cloud", 1);
+  ros::Publisher voxelized_primitive_pub = nh.advertise<sensor_msgs::PointCloud2>("wall_features/voxelized_cloud_primitive", 1);
+  ros::Publisher voxelized_input_pub = nh.advertise<sensor_msgs::PointCloud2>("wall_features/voxelized_cloud_input", 1);
+  ros::Publisher voxelized_output_pub = nh.advertise<sensor_msgs::PointCloud2>("wall_features/voxelized_cloud_output", 1);
   ros::Publisher damage_pub = nh.advertise<sensor_msgs::PointCloud2>("wall_features/damage_cloud", 1);
   ros::Publisher histogram_pub = nh.advertise<sensor_msgs::PointCloud2>("wall_features/histogram_cloud", 1);
 
   // ROS Msg Clouds
   sensor_msgs::PointCloud2 input_msg;
   sensor_msgs::PointCloud2 wall_msg;
-  sensor_msgs::PointCloud2 voxelized_msg;
+  sensor_msgs::PointCloud2 voxelized_msg_primitive;
+  sensor_msgs::PointCloud2 voxelized_msg_input;
+  sensor_msgs::PointCloud2 voxelized_msg_output;
   sensor_msgs::PointCloud2 damage_msg;
   sensor_msgs::PointCloud2 histogram_msg;
 
@@ -51,11 +55,13 @@ int main (int argc, char **argv)
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr wall_cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
   pcl::PointCloud<pcl::PointWallDamage>::Ptr wall_damage_cloud (new pcl::PointCloud<pcl::PointWallDamage>);
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr voxelized_cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr voxelized_cloud_primitive (new pcl::PointCloud<pcl::PointXYZRGB>);
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr voxelized_cloud_input (new pcl::PointCloud<pcl::PointXYZRGB>);
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr voxelized_cloud_output (new pcl::PointCloud<pcl::PointXYZRGB>);
   pcl::PointCloud<pcl::WallDamageHistogram>::Ptr histogram_cloud (new pcl::PointCloud<pcl::WallDamageHistogram>);
 
   // Feature Estimators 
-  pcl::WallDamagePointwiseEstimation<pcl::PointXYZRGB, pcl::PointWallDamage> point_damage_estimator;
+  pcl::WallDamagePointwiseEstimation<pcl::PointXYZRGB, pcl::PointXYZRGBNormal, pcl::PointWallDamage> point_damage_estimator;
   pcl::WallDamageHistogramEstimation<pcl::PointWallDamage, pcl::PointXYZRGB, pcl::WallDamageHistogram> damage_histogram_estimator;
 
   // Primitive Search Stuff
@@ -66,15 +72,15 @@ int main (int argc, char **argv)
 
   // --------------------------------------------- Bag Stuff ---------------------------------------------
   
-  bool input_from_bag = false;     // if not from bag, creates a new custom cloud
-  nh.param<bool>("wall_features/input_from_bag", input_from_bag, false);
+  bool input_from_bag;     // if not from bag, creates a new custom cloud
+  nh.param<bool>("wall_features/input_from_bag", input_from_bag, true);
 
   if(input_from_bag)
   {
-    std::string bag_topic = "/laser_stitcher/output_cloud";
-    std::string bag_name = "stitched_pointcloud.bag";
-    nh.getParam("wall_features/bag_topic", bag_topic);
-    nh.getParam("wall_features/bag_name", bag_name);
+    std::string bag_topic;
+    std::string bag_name;
+    nh.param<std::string>("wall_features/bag_topic", bag_topic, "/target_wall");
+    nh.param<std::string>("wall_features/bag_name", bag_name, "/home/conor/ros_data/Fake_Walls/Segmented/plated_faro/1dps.bag");
     ROS_INFO_STREAM("[WallFeatures] Loading clouds from bag files, using bag name: " << bag_name << " and topic name: " << bag_topic << ".");
     rosbag::Bag input_bag; 
     input_bag.open(bag_name, rosbag::bagmode::Read);
@@ -140,8 +146,51 @@ int main (int argc, char **argv)
   input_msg.header.frame_id = "map";
   input_pub.publish(input_msg);
 
+  // --------------------------------------------- Voxelization ---------------------------------------------
+  // Voxelize the Primitive Search Cloud
+  pcl::VoxelGrid<pcl::PointXYZRGB> vg_primitive;
+  *voxelized_cloud_primitive = *input_cloud;
+  vg_primitive.setInputCloud(voxelized_cloud_primitive);
+  float primitive_leaf_size;
+  nh.param<float>("wall_features/segmentation_leaf_size", primitive_leaf_size, 0.03);
+  ROS_ERROR_STREAM("leaf size: " << primitive_leaf_size);
+  vg_primitive.setLeafSize(primitive_leaf_size, primitive_leaf_size, primitive_leaf_size);
+  pcl::PointCloud<pcl::PointXYZRGB> temp_pc_primitive;
+  vg_primitive.filter(temp_pc_primitive);
+  *voxelized_cloud_primitive = temp_pc_primitive; 
+  ROS_INFO_STREAM("[WallFeatures] Performed voxelization of primitive search input cloud - new cloud size is " << voxelized_cloud_primitive->points.size());
+  pcl::toROSMsg(*voxelized_cloud_primitive, voxelized_msg_primitive);
+
+  // Voxelize the Wall Damage Search Cloud
+  pcl::VoxelGrid<pcl::PointXYZRGB> vg_input;
+  *voxelized_cloud_input = *input_cloud;
+  vg_input.setInputCloud(voxelized_cloud_input);
+  float input_leaf_size;
+  nh.param<float>("wall_features/input_cloud_leaf_size", input_leaf_size, 0.003);
+  ROS_ERROR_STREAM("leaf size: " << input_leaf_size);
+  vg_input.setLeafSize(input_leaf_size, input_leaf_size, input_leaf_size);
+  pcl::PointCloud<pcl::PointXYZRGB> temp_pc_input;
+  vg_input.filter(temp_pc_input);
+  *voxelized_cloud_input = temp_pc_input; 
+  ROS_INFO_STREAM("[WallFeatures] Performed voxelization of input cloud - output cloud size is " << voxelized_cloud_input->points.size());
+  pcl::toROSMsg(*voxelized_cloud_input, voxelized_msg_input);
+
+  // Voxelize the Output Cloud
+  pcl::VoxelGrid<pcl::PointXYZRGB> vg_output;
+  *voxelized_cloud_output = *input_cloud;
+  vg_output.setInputCloud(voxelized_cloud_output);
+  float output_leaf_size;
+  nh.param<float>("wall_features/output_cloud_leaf_size", output_leaf_size, 0.01);
+  ROS_ERROR_STREAM("leaf size: " << output_leaf_size);
+  vg_output.setLeafSize(output_leaf_size, output_leaf_size, output_leaf_size);
+  pcl::PointCloud<pcl::PointXYZRGB> temp_pc_output;
+  vg_output.filter(temp_pc_output);
+  *voxelized_cloud_output = temp_pc_output; 
+  ROS_INFO_STREAM("[WallFeatures] Performed voxelization of input cloud - output cloud size is " << voxelized_cloud_output->points.size());
+  pcl::toROSMsg(*voxelized_cloud_output, voxelized_msg_output);
+
   // --------------------------------------------- Find Wall Within Cloud ---------------------------------------------
-  wall_process.request.pointcloud = input_msg;
+  wall_process.request.pointcloud = voxelized_msg_primitive;
   int process_size;
   if(!wall_finder.call(wall_process))
     ROS_ERROR_STREAM("[WallFeatures] Failed to perform Primitive_Search on input cloud. Continuing with whole cloud...");
@@ -158,30 +207,17 @@ int main (int argc, char **argv)
   float wall_coeffs[4];
   for(int i=0; i<wall_process.request.inputs[0].expected_coefficients.size(); i++)
     ROS_ERROR_STREAM("params: " << wall_process.request.inputs[0].expected_coefficients[i]);
-  for(int i=0; i<4; i++)
+  for(int i=0; i<wall_process.response.outputs[0].task_results[1].primitive_coefficients.size(); i++)
   {
-    wall_coeffs[i] = wall_process.request.inputs[0].expected_coefficients[i];
+    wall_coeffs[i] = wall_process.response.outputs[0].task_results[1].primitive_coefficients[i];
     ROS_ERROR_STREAM("wall coeffs: " << i << " -> "  << wall_coeffs[i]);
   }
   point_damage_estimator.setWallCoefficients(wall_coeffs);
   int k_search;
   nh.param<int>("wall_features/k_search_histogram", k_search, 30);
   point_damage_estimator.setKSearch(k_search);
-  point_damage_estimator.compute(*wall_cloud, *wall_damage_cloud);
+  point_damage_estimator.compute(*voxelized_cloud_input, *wall_damage_cloud);
   ROS_INFO_STREAM("[WallFeatures] Performed pointwise damage estimation - output cloud size is " << wall_damage_cloud->points.size());
-
-  // --------------------------------------------- Voxelization ---------------------------------------------
-  pcl::VoxelGrid<pcl::PointXYZRGB> vg;
-  *voxelized_cloud = *wall_cloud;
-  vg.setInputCloud(voxelized_cloud);
-  float leaf_size;
-  nh.param<float>("wall_features/leaf_size", leaf_size, 0.01);
-  ROS_ERROR_STREAM("leaf size: " << leaf_size);
-  vg.setLeafSize(leaf_size, leaf_size, leaf_size);
-  pcl::PointCloud<pcl::PointXYZRGB> temp_pc;
-  vg.filter(temp_pc);
-  *voxelized_cloud = temp_pc; 
-  ROS_INFO_STREAM("[WallFeatures] Performed voxelization of input cloud - output cloud size is " << voxelized_cloud->points.size());
 
   float lower_angle_bin_limit, upper_angle_bin_limit, lower_dist_bin_limit, upper_dist_bin_limit;
   bool automatically_set_bins;
@@ -215,7 +251,7 @@ int main (int argc, char **argv)
   damage_histogram_estimator.setBinLimits(lower_angle_bin_limit, upper_angle_bin_limit, lower_dist_bin_limit, upper_dist_bin_limit);
   nh.param<int>("wall_features/k_search_histogram", k_search, 30);
   damage_histogram_estimator.setKSearch(k_search);
-  damage_histogram_estimator.compute(*wall_damage_cloud, *voxelized_cloud, *histogram_cloud);
+  damage_histogram_estimator.compute(*wall_damage_cloud, *voxelized_cloud_output, *histogram_cloud);
   ROS_INFO_STREAM("[WallFeatures] Performed histogram cloud estimation.");
 
   std::ofstream output_file;
@@ -230,19 +266,23 @@ int main (int argc, char **argv)
   }
   output_file.close();
 
-  pcl::toROSMsg(*voxelized_cloud, voxelized_msg);
+  ROS_DEBUG_STREAM("[WallFeatures] Printed out histogram_point.csv text file.");
+
   pcl::toROSMsg(*wall_damage_cloud, damage_msg);
   pcl::toROSMsg(*histogram_cloud, histogram_msg);
 
-  voxelized_msg.header.frame_id = "map";
   damage_msg.header.frame_id = "map";
   histogram_msg.header.frame_id = "map";
+
+  ROS_DEBUG_STREAM("[WallFeatures] Created final cloud messages; publishing until node is killed.");
 
   while(ros::ok())
   {
     input_pub.publish(input_msg);
     wall_pub.publish(wall_msg);
-    voxelized_pub.publish(voxelized_msg);
+    voxelized_primitive_pub.publish(voxelized_msg_primitive);
+    voxelized_output_pub.publish(voxelized_msg_output);
+    voxelized_input_pub.publish(voxelized_msg_input);
     damage_pub.publish(damage_msg);
     histogram_pub.publish(histogram_msg);
     primitive_pub.publish(wall_process);

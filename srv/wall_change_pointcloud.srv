@@ -1,0 +1,26 @@
+
+sensor_msgs/PointCloud2 first_cloud
+sensor_msgs/PointCloud2 second_cloud
+
+float32 first_image_coefficients
+float32 second_image_coefficients
+
+float32 outlier_distance_threshold
+float32 acceptable_distance_threshold
+
+bool use_intensity_for_depth
+
+---
+
+sensor_msgs/PointCloud2 first_cloud_voxelized
+sensor_msgs/PointCloud2 second_cloud_voxelized
+sensor_msgs/PointCloud2 difference_cloud
+
+float32 min_deviation
+float32 max_deviation
+float32 mean_deviation
+float32 mean_deviation_abs
+
+float32 median_deviation
+float32 percent_points_valid
+float32 percent_points_acceptable

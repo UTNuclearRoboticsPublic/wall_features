@@ -38,6 +38,8 @@ int main(int argc, char** argv)
 	float pixel_width, pixel_height;
 	nh.param<float>("/rasterizer/pixel_width", pixel_width, 0.02);
 	nh.param<float>("/rasterizer/pixel_height", pixel_height, 0.02);
+	bool outlier_filter;
+	nh.param<bool>("/rasterizer/outlier_filter", outlier_filter, true);
 	float outlier_filter_scale;
 	nh.param<float>("/rasterizer/outlier_filter_scale", outlier_filter_scale, 0.06);
 	float plane_threshold_distance;
@@ -55,7 +57,7 @@ int main(int argc, char** argv)
 	{
 		// ------------- Bag Names and Topics -------------
 		std::string cloud_bag_name, cloud_bag_topic;
-		nh.param<std::string>("/rasterizer/bag_name", cloud_bag_name, "/home/conor/catkin-ws/data/Tunnel_Scans/Nov_06_2017/fast_arm_fore.bag");
+		nh.param<std::string>("/rasterizer/bag_name", cloud_bag_name, "/home/conor/ros_data/Tunnel_Scans/Nov_06_2017/fast_arm_fore.bag");
 		nh.param<std::string>("/rasterizer/bag_topic", cloud_bag_topic, "/laser_mapper/local_dense_cloud");
 		ROS_INFO_STREAM("[RasterizerClient] Loading data from bag files.");
 
@@ -97,12 +99,13 @@ int main(int argc, char** argv)
 	ros::ServiceClient client = nh.serviceClient<wall_features::rasterizer_service>("rasterizer");
 	wall_features::rasterizer_service srv;
 	srv.request.input_cloud = input_cloud;
+	srv.request.outlier_filter = outlier_filter;
+	srv.request.outlier_filter_scale = outlier_filter_scale;
 	srv.request.rad_outlier_min_neighbors = rad_outlier_min_neighbors;
 	srv.request.max_iterations = max_iterations;
 	srv.request.threshold_distance = plane_threshold_distance;
 	srv.request.pixel_wdt = pixel_width;
 	srv.request.pixel_hgt = pixel_height;
-	srv.request.outlier_filter_scale = outlier_filter_scale;
 
 	// Run Service
 	while(ros::ok())

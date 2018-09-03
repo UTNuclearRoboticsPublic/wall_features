@@ -17,6 +17,8 @@ struct PointWallDamage
   float angle_offset;         // Offset in angle between local normal vector and expected normal vector of the containing plane primitive definition
   float dist_offset;        // Offset in position between the point and the containing plane primitive definition
 
+  friend std::ostream& operator << (std::ostream& os, const PointWallDamage& p);
+
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW   // make sure our new allocators are aligned
 } EIGEN_ALIGN16;                    // enforce SSE padding for correct memory alignment
 

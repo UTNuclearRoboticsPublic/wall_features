@@ -1,0 +1,31 @@
+
+# Options for including input cloud in service
+sensor_msgs/PointCloud2 input_cloud
+
+# Options to load input cloud from bags
+bool load_from_bags
+string bag_name
+string bag_topic
+
+float32 segmentation_cloud_voxel_size
+float32 wall_damage_voxel_size
+float32 wall_damage_histogram_voxel_size
+
+string primitive_search_name
+
+int32 k_search_normals
+int32 k_search_histogram
+
+bool automatically_set_bins
+
+float32 lower_angle_bin_limit
+float32 upper_angle_bin_limit
+float32 lower_dist_bin_limit
+float32 upper_dist_bin_limit
+
+---
+
+sensor_msgs/PointCloud2 wall_damage_cloud
+sensor_msgs/PointCloud2 wall_damage_histogram_cloud
+
+float32[] wall_coefficients

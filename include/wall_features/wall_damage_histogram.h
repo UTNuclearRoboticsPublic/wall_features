@@ -1,9 +1,12 @@
 
+#ifndef WALL_DAMAGE_HISTOGRAM_H_
+#define WALL_DAMAGE_HISTOGRAM_H_
 
 #define PCL_NO_PRECOMPILE
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 #include <pcl/io/pcd_io.h>
+#include <pcl/point_representation.h>
 
 namespace pcl {
 struct WallDamageHistogram
@@ -31,3 +34,25 @@ POINT_CLOUD_REGISTER_POINT_STRUCT (pcl::WallDamageHistogram,
 )
 PCL_EXPORTS std::ostream& operator << (std::ostream& os, const pcl::WallDamageHistogram& p);
 
+
+namespace pcl {
+template <>
+class DefaultPointRepresentation<WallDamageHistogram> : public PointRepresentation<WallDamageHistogram>
+{
+public:
+  DefaultPointRepresentation ()
+  {
+    nr_dimensions_ = 80;
+  }
+
+  virtual void
+  copyToFloatArray (const WallDamageHistogram &p, float * out) const
+  {
+    for (int i = 0; i < nr_dimensions_; ++i)
+      out[i] = p.histogram[i];
+  }
+};
+}
+
+
+#endif // WALL_DAMAGE_HISTOGRAM_H_

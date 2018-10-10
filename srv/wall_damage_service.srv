@@ -1,15 +1,33 @@
 
+# -------------------------------------------------------
 # Options for including input cloud in service
 sensor_msgs/PointCloud2 input_cloud
 
+# -------------------------------------------------------
 # Options to load input cloud from bags
 bool load_from_bags
 string bag_name
 string bag_topic
 
+# -------------------------------------------------------
+# The points at which damage and histogram are evaluated
+
+#   These can be driven by voxelization
 float32 segmentation_cloud_voxel_size
 float32 wall_damage_voxel_size
 float32 wall_damage_histogram_voxel_size
+
+#   Or deliberately specified by the client
+bool damage_inliers_given
+bool histogram_inliers_given
+sensor_msgs/PointCloud2 damage_inliers
+sensor_msgs/PointCloud2 histogram_inliers
+
+# -------------------------------------------------------
+bool is_already_segmented 		# if this is true, won't attempt to segment out the plane
+float32[] wall_coefficients 	# only populate these if segmentation has already occurred 
+
+# otherwise, the following parameters control segmentation:
 
 string primitive_search_name
 
@@ -23,7 +41,15 @@ float32 upper_angle_bin_limit
 float32 lower_dist_bin_limit
 float32 upper_dist_bin_limit
 
+# -------------------------------------------------------
+# -------------------------------------------------------
+
+
 ---
+
+
+# -------------------------------------------------------
+# -------------------------------------------------------
 
 sensor_msgs/PointCloud2 wall_damage_cloud
 sensor_msgs/PointCloud2 wall_damage_histogram_cloud

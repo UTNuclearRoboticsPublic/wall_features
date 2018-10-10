@@ -204,6 +204,7 @@ int main (int argc, char **argv)
   pcl::fromROSMsg(wall_msg, *wall_cloud);
 
   // --------------------------------------------- Wall Damage Estimation ---------------------------------------------
+  // Set Wall Coefficients
   float wall_coeffs[4];
   for(int i=0; i<wall_process.request.inputs[0].expected_coefficients.size(); i++)
     ROS_ERROR_STREAM("params: " << wall_process.request.inputs[0].expected_coefficients[i]);
@@ -213,9 +214,18 @@ int main (int argc, char **argv)
     ROS_ERROR_STREAM("wall coeffs: " << i << " -> "  << wall_coeffs[i]);
   }
   point_damage_estimator.setWallCoefficients(wall_coeffs);
+  // Set Number of Neighbors to Use
   int k_search;
   nh.param<int>("wall_features/k_search_histogram", k_search, 30);
   point_damage_estimator.setKSearch(k_search);
+  // Set Sensor Viewpoint
+  float viewpoint[3];
+  nh.param<float>("wall_features/viewpoint_x", viewpoint[0], 0.0);
+  nh.param<float>("wall_features/viewpoint_y", viewpoint[1], 0.0);
+  nh.param<float>("wall_features/viewpoint_z", viewpoint[2], 0.0);
+  ROS_ERROR_STREAM("viewpoint: " << viewpoint[0] << " " << viewpoint[1] << " " << viewpoint[2]);
+  point_damage_estimator.setViewpoint(viewpoint);
+  // Compute Result
   point_damage_estimator.compute(*voxelized_cloud_input, *wall_damage_cloud);
   ROS_INFO_STREAM("[WallFeatures] Performed pointwise damage estimation - output cloud size is " << wall_damage_cloud->points.size());
 

@@ -17,6 +17,33 @@ namespace pcl
 // -----------------------------------------------------------------------------------------------------------------------------
 // ------------------------------------------------ Pointwise Damage Estimation ------------------------------------------------
 // -----------------------------------------------------------------------------------------------------------------------------
+	// Handle color and intensity for various input types
+	// RGB input, 
+	template <> void 
+	WallDamagePointwiseEstimation<pcl::PointXYZRGB, pcl::PointXYZRGBNormal, pcl::PointWallDamage>::setColorValues(pcl::PointXYZRGB input_point, pcl::PointWallDamage &damage_point)
+	{
+		damage_point.r = input_point.r;
+		damage_point.g = input_point.g;
+		damage_point.b = input_point.b;
+		damage_point.intensity = 0;
+	}
+	template <> void 
+	WallDamagePointwiseEstimation<pcl::PointXYZI, pcl::PointXYZINormal, pcl::PointWallDamage>::setColorValues(pcl::PointXYZI input_point, pcl::PointWallDamage &damage_point)
+	{
+		damage_point.intensity = input_point.intensity;
+		damage_point.r = 0;
+		damage_point.g = 0;
+		damage_point.b = 0;
+	}
+	template <> void 
+	WallDamagePointwiseEstimation<pcl::PointXYZ, pcl::PointNormal, pcl::PointWallDamage>::setColorValues(pcl::PointXYZ input_point, pcl::PointWallDamage &damage_point)
+	{
+		damage_point.r = 0;
+		damage_point.g = 0;
+		damage_point.b = 0;
+		damage_point.intensity = 0;
+	}
+
 	template <typename PointInT, typename PointNormalT, typename PointOutT> void WallDamagePointwiseEstimation<PointInT, PointNormalT, PointOutT>::computeFeature (pcl::PointCloud<PointOutT> &output) { }
 	//template <typename PointInT> void setInputCloud(const pcl::PointCloud<PointInT> &input);
 
@@ -26,6 +53,8 @@ namespace pcl
 	{ 
 		if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug) )
     ros::console::notifyLoggerLevelsChanged();  
+
+		findWallCoordinateFrame();
 
 		// TEMPORARY - this an external input later on...
 		pcl::Normal wall_normal;
@@ -51,11 +80,23 @@ namespace pcl
 		//   Run Normal Estimation --> generate Normals
 		norm_est.setInputCloud (nanless_input);
 		norm_est.compute (*points_with_normals);
+		pcl::copyPointCloud(*nanless_input, *points_with_normals);
 		for(int i=0; i<nanless_input->points.size(); i++)
 		{
+			// Update Position
 			points_with_normals->points[i].x = nanless_input->points[i].x;
 			points_with_normals->points[i].y = nanless_input->points[i].y;
 			points_with_normals->points[i].z = nanless_input->points[i].z;
+			// Flip Normals to Align with Plane Normal
+			float normal_dot_product = points_with_normals->points[i].normal_x * wall_normal.normal_x
+									 + points_with_normals->points[i].normal_y * wall_normal.normal_y
+									 + points_with_normals->points[i].normal_z * wall_normal.normal_z;
+			if(normal_dot_product < 0)
+			{
+				points_with_normals->points[i].normal_x *= -1;
+				points_with_normals->points[i].normal_y *= -1;
+				points_with_normals->points[i].normal_z *= -1;
+			}
 		}
 		ROS_DEBUG_STREAM("[WallDamageEstimation] Created XYZNormal cloud from input, with size " << points_with_normals->points.size());
 
@@ -69,6 +110,8 @@ namespace pcl
 			point.normal_x = points_with_normals->points[i].normal_x;
 			point.normal_y = points_with_normals->points[i].normal_y;
 			point.normal_z = points_with_normals->points[i].normal_z;
+			
+			setColorValues(nanless_input->points[i], point);
 
 			// Angular offset between point normal and wall normal
 			float dot_product = point.normal_x*wall_normal.normal_x + point.normal_y*wall_normal.normal_y + point.normal_z*wall_normal.normal_z;
@@ -76,10 +119,16 @@ namespace pcl
 			float point_normal_mag = sqrt(pow(point.normal_x,2) + pow(point.normal_y,2) + pow(point.normal_z,2));
 			point.angle_offset = acos(dot_product/wall_normal_mag/point_normal_mag);	// Absolute value of the angle difference between plane and point normal (assuming acos -> 0 to pi)
 			if(point.angle_offset < 0)
-				ROS_INFO_STREAM("oops " << point.angle_offset << " " << dot_product << " " << point.normal_x << " " << point.normal_y << " " << point.normal_z);
+				ROS_WARN_STREAM("oops " << point.angle_offset << " " << dot_product << " " << point.normal_x << " " << point.normal_y << " " << point.normal_z);
 			// Move angle range from (0 to pi) to (-pi/2 to pi/2) --> puts 'parallel to wall' (ie angle=0) at middle, not edges  
 			if(point.angle_offset > 1.570796)
 				point.angle_offset = 3.141593-point.angle_offset;
+
+			// Express the difference of the POINT NORMAL and the WALL NORMAL in the WALL COORDINATE FRAME 
+			Eigen::Vector3f point_normal_eigen;
+			point_normal_eigen << point.normal_x, point.normal_y, point.normal_z;
+			point.horz_normal_offset = wall_x_axis_.dot(point_normal_eigen);
+			point.second_normal_offset = wall_y_axis_.dot(point_normal_eigen);
 
 			// Distance between point and plane
 			pcl::PointXYZ point_to_wall;			// Vector from the current point to the wall normal-from-origin point
@@ -105,8 +154,58 @@ namespace pcl
 		wall_coeffs_[2] = wall_coeffs[2];
 		wall_coeffs_[3] = wall_coeffs[3];
 	}
+	template <typename PointInT, typename PointNormalT, typename PointOutT> void 
+	WallDamagePointwiseEstimation<PointInT, PointNormalT, PointOutT>::setViewpoint(const float viewpoint[3])
+	{
+		viewpoint_[0] = viewpoint[0];
+		viewpoint_[1] = viewpoint[1];
+		viewpoint_[2] = viewpoint[2];
+	}
+	template <typename PointInT, typename PointNormalT, typename PointOutT> void 
+	WallDamagePointwiseEstimation<PointInT, PointNormalT, PointOutT>::findWallCoordinateFrame()
+	{
+		// Wall Z-axis (Plane Normal)
+		for(int i=0; i<3; i++)
+			wall_z_axis_[i] = wall_coeffs_[i];
+
+		// Wall X-axis (Horizontal)
+		if(wall_z_axis_[0] == 0 && wall_z_axis_[1] == 0 && wall_z_axis_[2] != 0)
+		{
+			wall_x_axis_[0] = 1;
+			wall_x_axis_[1] = 0;
+			wall_x_axis_[2] = 0;
+		}
+		else
+		{
+			Eigen::Vector3f global_z;
+			global_z[0] = 0;
+			global_z[1] = 0;
+			global_z[2] = 1;
+			wall_x_axis_ = global_z.cross(wall_z_axis_);
+		}
+
+		// Wall Y-axis
+		wall_y_axis_ = wall_z_axis_.cross(wall_x_axis_);
+
+		ROS_DEBUG_STREAM("[WallDamageEstimation] Wall Coordinate Frame: ");
+		ROS_DEBUG_STREAM("   X: " << wall_x_axis_[0] << " " << wall_x_axis_[1] << " " << wall_x_axis_[2]);
+		ROS_DEBUG_STREAM("   Y: " << wall_y_axis_[0] << " " << wall_y_axis_[1] << " " << wall_y_axis_[2]);
+		ROS_DEBUG_STREAM("   Z: " << wall_z_axis_[0] << " " << wall_z_axis_[1] << " " << wall_z_axis_[2]);
+	}
 
 
+
+
+
+
+
+
+
+
+
+
+
+	
 // -----------------------------------------------------------------------------------------------------------------------------
 // ------------------------------------------------ Histogram Damage Estimation ------------------------------------------------
 // -----------------------------------------------------------------------------------------------------------------------------

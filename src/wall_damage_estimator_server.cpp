@@ -56,16 +56,33 @@ bool WallDamageEstimatorServer::wallDamageCallback(wall_features::wall_damage_se
 	// -------------------------------------------------------------------
 	// 2) VOXELIZATION - downsample clouds to required density
 	//   The size of these clouds determines the size of the outputs from these respective processes
+	//   If the user actually enters particular points to use instead of going for voxels, use those instead
 	voxelizeCloud(input_cloud_ptr_, segmentation_input_ptr_, req.segmentation_cloud_voxel_size, "Segmentation Input Cloud");
-	voxelizeCloud(input_cloud_ptr_, wall_damage_input_ptr_, req.wall_damage_voxel_size, "Wall Damage Input Cloud");
-	voxelizeCloud(input_cloud_ptr_, wall_damage_histogram_input_ptr_, req.wall_damage_histogram_voxel_size, "Wall Damage Histogram Input Cloud");
+	if(req.damage_inliers_given)
+		pcl::fromROSMsg(req.damage_inliers, *wall_damage_input_ptr_);
+	else
+		voxelizeCloud(input_cloud_ptr_, wall_damage_input_ptr_, req.wall_damage_voxel_size, "Wall Damage Input Cloud");
+	//   Only create histogram initial cloud from voxelization of input if this is requested
+	if(req.histogram_inliers_given)
+		pcl::fromROSMsg(req.histogram_inliers, *wall_damage_histogram_input_ptr_);
+	else
+		voxelizeCloud(input_cloud_ptr_, wall_damage_histogram_input_ptr_, req.wall_damage_histogram_voxel_size, "Wall Damage Histogram Input Cloud");
 
 	// -------------------------------------------------------------------
 	// 3) Wall Coefficient Determination
 	//   By default this will use planar RANSAC to segment out a plane from the input cloud and determine its coefficients
 	//   This information is used later to determine the offset of all points in the wall from their expected positions
-	if( !planeSegmentation(res) )
-		return false;
+	if( !req.is_already_segmented )
+	{
+		if( !planeSegmentation(res) )
+			return false;
+	}
+	else 
+		for(int i=0; i<req.wall_coefficients.size(); i++)
+		{
+			ROS_DEBUG_STREAM("[WallDamageEstimator]   Input Plane Coefficient " << i << ": " << req.wall_coefficients[i]);
+			res.wall_coefficients.push_back(req.wall_coefficients[i]);
+		}
 
 	// -------------------------------------------------------------------
 	// 4) Generate Wall Damage Cloud
@@ -117,7 +134,7 @@ bool WallDamageEstimatorServer::voxelizeCloud(PCP input_cloud_ptr, PCP output_cl
 	vg_primitive.setInputCloud(input_cloud_ptr);
 	vg_primitive.setLeafSize(leaf_size, leaf_size, leaf_size);
 	vg_primitive.filter(*output_cloud_ptr); 
-	ROS_INFO_STREAM("[WallDamageEstimator] Performed voxelization on cloud " << cloud_name << " - new cloud size is " << output_cloud_ptr->points.size());
+	ROS_INFO_STREAM("[WallDamageEstimator] Performed voxelization on cloud " << cloud_name << " - new cloud size is " << output_cloud_ptr->points.size() << " using leaf size " << leaf_size);
 
 	return true;
 }
@@ -146,7 +163,7 @@ bool WallDamageEstimatorServer::planeSegmentation(wall_features::wall_damage_ser
 	ROS_INFO_STREAM("coeffs: " << wall_process_.response.outputs[0].task_results[1].primitive_coefficients.size());
 	for(int i=0; i<wall_process_.response.outputs[0].task_results[1].primitive_coefficients.size(); i++)
 	{
-		ROS_INFO_STREAM("[WallDamageEstimator]   Plane Coefficient " << i << ": " << wall_process_.response.outputs[0].task_results[1].primitive_coefficients[i]);
+		ROS_INFO_STREAM("[WallDamageEstimator]   Found Plane Coefficient " << i << ": " << wall_process_.response.outputs[0].task_results[1].primitive_coefficients[i]);
 		res.wall_coefficients.push_back(wall_process_.response.outputs[0].task_results[1].primitive_coefficients[i]);
 	}
 

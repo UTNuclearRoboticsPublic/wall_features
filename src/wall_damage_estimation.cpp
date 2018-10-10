@@ -6,10 +6,14 @@
 
 #include <pcl/point_types.h>
 #include <pcl/impl/instantiate.hpp>
-#include "wall_features/point_wall_damage.h"
+//#include "wall_features/point_wall_damage.h"
 #include "wall_features/wall_damage_histogram.h"
 #include "wall_features/wall_damage_estimation.h"
 #include "wall_features/wall_damage_estimation.hpp"
+
+#include "wall_features/itwf.h"
+#include "wall_features/itwf_estimation.h"
+#include "wall_features/itwf_estimation.hpp"
 
 template class pcl::WallDamagePointwiseEstimation<pcl::PointXYZ, pcl::PointNormal, pcl::PointWallDamage>;
 template class pcl::WallDamagePointwiseEstimation<pcl::PointXYZRGB, pcl::PointXYZRGBNormal, pcl::PointWallDamage>;
@@ -17,3 +21,6 @@ template class pcl::WallDamagePointwiseEstimation<pcl::PointXYZI, pcl::PointXYZI
 template class pcl::WallDamageHistogramEstimation<pcl::PointWallDamage, pcl::PointXYZ, pcl::WallDamageHistogram>;
 template class pcl::WallDamageHistogramEstimation<pcl::PointWallDamage, pcl::PointXYZRGB, pcl::WallDamageHistogram>;
 template class pcl::WallDamageHistogramEstimation<pcl::PointWallDamage, pcl::PointXYZI, pcl::WallDamageHistogram>;
+
+template class pcl::ITWFEstimation<pcl::PointWallDamage, pcl::PointWallDamage, pcl::ITWFSignature90>;
+template class pcl::ITWFEstimation<pcl::PointWallDamage, pcl::PointWallDamage, pcl::ITWFSignature210>;

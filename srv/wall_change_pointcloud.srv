@@ -2,9 +2,6 @@
 sensor_msgs/PointCloud2 first_cloud
 sensor_msgs/PointCloud2 second_cloud
 
-float32 first_image_coefficients
-float32 second_image_coefficients
-
 float32 outlier_distance_threshold
 float32 acceptable_distance_threshold
 

@@ -6,6 +6,10 @@ wall_features:
   debug: true
   k_search_pointwise:   30
   k_search_histogram:   30
+  # viewpoint
+  viewpoint_x:          0.0
+  viewpoint_y:          0.5
+  viewpoint_z:          0.5
   # bin options
   automatically_set_bins:   true
   lower_angle_bin_limit:  0.0

@@ -28,8 +28,8 @@ class WallDamageEstimatorServer
 public:
 	WallDamageEstimatorServer();
 
-	typedef typename pcl::PointXYZRGB PointType;
-	typedef typename pcl::PointXYZRGBNormal PointNormalType;
+	typedef typename pcl::PointXYZI PointType;
+	typedef typename pcl::PointXYZINormal PointNormalType;
 	typedef typename pcl::PointCloud<PointType> PC;
 	typedef typename pcl::PointCloud<PointType>::Ptr PCP;
 

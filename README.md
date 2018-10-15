@@ -15,12 +15,33 @@ Several custom pcl feature types were created, both to describe the damage to th
 - Normal vector data describing the local curvature at that point
 - Normal deviation out of or into the expected planar wall surface
 
+Depth deviation from expected planar wall:
+
+<img src=images/depth.png width="600">
+
+Angle deviation from expected planar wall normal:
+
+<img src=images/angle.png width="600">
+
+Normal direction deviation in horizontal direction from expected planar wall normal:
+
+<img src=images/horizontal_normal.png width="600">
+
+Normal direction deviation in secondary direction from expected planar wall normal:
+
+<img src=images/secondary_normal.png width="600">
+
 2. Wall Damage Histogram
 - XYZ data describing a point in the wall
 - Based on a neighborhood of Point_Wall_Damage points around that point, a histogram of their various normal vector angular deviations from the wall normal
 - Based on a neighborhood of Point_Wall_Damage points around that point, a histogram of their various normal depth deviations from the planar wall surface
 - The average angular deviation in the histogram
 - The average depth deviation in the histogram
+
+3. Is This Wall Flat (ITWF)
+- XYZ data describing a point in the wall
+- Based on a neighborhood of Point_Wall_Damage points around that, a histogram of their differences from the target point in color, intensity, depth, and normals, as well as the partial derivatives in the horizontal and secondary axes within the plane
+- The average values of each of these variables within the local neighborhood for each point
 
 ## Wall Change Estimation
 This subpackage allows the estimation of change between subsequent scans of a planar wall. TWo different interfaces are provided - one for pointcloud space and one for raster space. 

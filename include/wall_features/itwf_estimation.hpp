@@ -9,7 +9,7 @@
   -- PCL_ADD_POINT4D;                  // preferred way of adding a XYZ+padding
   -- PCL_ADD_NORMAL4D; 				// This adds the member normal[3] which can also be accessed using the point (which is float[4])
   float angle_offset_avg; 			// Average offset in angle between local normal vectors of each neighbor point and the expected normal vector of the containing plane primitive definition
-  float dist_offset_avg; 			// Average offset in position between each neighbor point and the containing plane primitive definition
+  float depth_offset_avg; 			// Average offset in position between each neighbor point and the containing plane primitive definition
   float	histogram[80];
 */
 namespace pcl
@@ -27,12 +27,12 @@ namespace pcl
 		for(int i=0; i<histogram_point.descriptorSize(); i++)
 			histogram_point.histogram[i] = 0;
 		// Initialize Basal Averages
-		histogram_point.dist_offset_avg = 0;
+		histogram_point.depth_offset_avg = 0;
 		histogram_point.horz_angle_offset_avg = 0;
 		histogram_point.second_angle_offset_avg = 0;
 		// Initialize Partial Derivative Averages
-		histogram_point.dist_offset_deriv_horz_avg = 0;
-		histogram_point.dist_offset_deriv_second_avg = 0;
+		histogram_point.depth_offset_deriv_horz_avg = 0;
+		histogram_point.depth_offset_deriv_second_avg = 0;
 		histogram_point.horz_angle_offset_deriv_horz_avg = 0;
 		histogram_point.horz_angle_offset_deriv_second_avg = 0;
 		histogram_point.second_angle_offset_deriv_horz_avg = 0;
@@ -48,7 +48,7 @@ namespace pcl
 		for(int i=0; i<histogram_point.descriptorSize(); i++)
 			histogram_point.histogram[i] = 0;
 		// Initialize Basal Averages
-		histogram_point.dist_offset_avg = 0;
+		histogram_point.depth_offset_avg = 0;
 		histogram_point.horz_angle_offset_avg = 0;
 		histogram_point.second_angle_offset_avg = 0;
 		histogram_point.r_avg = 0;
@@ -56,8 +56,8 @@ namespace pcl
 		histogram_point.b_avg = 0;
 		histogram_point.intensity_avg = 0;
 		// Initialize Partial Derivative Averages
-		histogram_point.dist_offset_deriv_horz_avg = 0;
-		histogram_point.dist_offset_deriv_second_avg = 0;
+		histogram_point.depth_offset_deriv_horz_avg = 0;
+		histogram_point.depth_offset_deriv_second_avg = 0;
 		histogram_point.horz_angle_offset_deriv_horz_avg = 0;
 		histogram_point.horz_angle_offset_deriv_second_avg = 0;
 		histogram_point.second_angle_offset_deriv_horz_avg = 0;
@@ -74,14 +74,14 @@ namespace pcl
 	template <> void
 	ITWFEstimation<pcl::PointWallDamage, pcl::PointWallDamage, pcl::ITWFSignature90>::incrementAverages(pcl::ITWFSignature90 &histogram_point, pcl::PointWallDamage neighbor_point)
 	{
-		histogram_point.dist_offset_avg += neighbor_point.dist_offset;
+		histogram_point.depth_offset_avg += neighbor_point.depth_offset;
 		histogram_point.horz_angle_offset_avg += neighbor_point.horz_normal_offset;
 		histogram_point.second_angle_offset_avg += neighbor_point.second_normal_offset;
 	}
 	template <> void
 	ITWFEstimation<pcl::PointWallDamage, pcl::PointWallDamage, pcl::ITWFSignature210>::incrementAverages(pcl::ITWFSignature210 &histogram_point, pcl::PointWallDamage neighbor_point)
 	{
-		histogram_point.dist_offset_avg += neighbor_point.dist_offset;
+		histogram_point.depth_offset_avg += neighbor_point.depth_offset;
 		histogram_point.horz_angle_offset_avg += neighbor_point.horz_normal_offset;
 		histogram_point.second_angle_offset_avg += neighbor_point.second_normal_offset;
 		histogram_point.r_avg += neighbor_point.r;
@@ -96,12 +96,12 @@ namespace pcl
 		for(int i=0; i<histogram_point.descriptorSize(); i++)
 			histogram_point.histogram[i] /= num_points;
 		// Normalize Basal Averages
-		histogram_point.dist_offset_avg /= num_points;
+		histogram_point.depth_offset_avg /= num_points;
 		histogram_point.horz_angle_offset_avg /= num_points;
 		histogram_point.second_angle_offset_avg /= num_points;
 		// Normalize Partial Derivative Averages
-		histogram_point.dist_offset_deriv_horz_avg /= num_points;
-		histogram_point.dist_offset_deriv_second_avg /= num_points;
+		histogram_point.depth_offset_deriv_horz_avg /= num_points;
+		histogram_point.depth_offset_deriv_second_avg /= num_points;
 		histogram_point.horz_angle_offset_deriv_horz_avg /= num_points;
 		histogram_point.horz_angle_offset_deriv_second_avg /= num_points;
 		histogram_point.second_angle_offset_deriv_horz_avg /= num_points;
@@ -114,7 +114,7 @@ namespace pcl
 		for(int i=0; i<histogram_point.descriptorSize(); i++)
 			histogram_point.histogram[i] /= num_points;
 		// Normalize Basal Averages
-		histogram_point.dist_offset_avg /= num_points;
+		histogram_point.depth_offset_avg /= num_points;
 		histogram_point.horz_angle_offset_avg /= num_points;
 		histogram_point.second_angle_offset_avg /= num_points;
 		histogram_point.r_avg /= num_points;
@@ -122,8 +122,8 @@ namespace pcl
 		histogram_point.g_avg /= num_points;
 		histogram_point.intensity_avg /= num_points;
 		// Normalize Partial Derivative Averages
-		histogram_point.dist_offset_deriv_horz_avg /= num_points;
-		histogram_point.dist_offset_deriv_second_avg /= num_points;
+		histogram_point.depth_offset_deriv_horz_avg /= num_points;
+		histogram_point.depth_offset_deriv_second_avg /= num_points;
 		histogram_point.horz_angle_offset_deriv_horz_avg /= num_points;
 		histogram_point.horz_angle_offset_deriv_second_avg /= num_points;
 		histogram_point.second_angle_offset_deriv_horz_avg /= num_points;
@@ -314,9 +314,9 @@ namespace pcl
 			second_distance = 1.0e-20;
 
 		// Partial Derivative of Depth Deviation, with respect to Horizontal Dimension
-		depth_offset_horz =   (source_point.dist_offset - target_point.dist_offset) / horz_distance;									// d D / d q1
+		depth_offset_horz =   (source_point.depth_offset - target_point.depth_offset) / horz_distance;									// d D / d q1
 		// Partial Derivative of Depth Deviation, with respect to Secondary Dimension
-		depth_offset_second = (source_point.dist_offset - target_point.dist_offset) / second_distance;									// d D / d q2
+		depth_offset_second = (source_point.depth_offset - target_point.depth_offset) / second_distance;									// d D / d q2
 
 		// Partial Derivatives of Horizontal and Secondary Normal Deviations, with respect to Horizontal Dimension
 		horz_normal_offset_diff_horz =     (source_point.horz_normal_offset - target_point.horz_normal_offset)     / horz_distance; 	// d N_q1 / d q1
@@ -335,7 +335,7 @@ namespace pcl
 
 		// Set Up Depth Bins
 		// This function is templated on different output histogram sizes
-		addHistogramValues(point, target_point.dist_offset, target_point.horz_normal_offset, target_point.second_normal_offset,
+		addHistogramValues(point, target_point.depth_offset, target_point.horz_normal_offset, target_point.second_normal_offset,
 			 					  depth_offset_horz, 		horz_normal_offset_diff_horz, 	 second_normal_offset_diff_horz,
 			 					  depth_offset_second, 		horz_normal_offset_diff_second,  second_normal_offset_diff_second,
 			 					  target_point.intensity, 	intensity_diff_horz, 			 intensity_diff_second,
@@ -382,8 +382,8 @@ namespace pcl
 		point.histogram[ getBinIndex(b_deriv_second, -1/minimum_radius_, 1/minimum_radius_, 10)+200 ] ++;
 
 		// Increment Average Values
-		point.dist_offset_deriv_horz_avg += depth_deriv_horz;
-		point.dist_offset_deriv_second_avg += depth_deriv_second;
+		point.depth_offset_deriv_horz_avg += depth_deriv_horz;
+		point.depth_offset_deriv_second_avg += depth_deriv_second;
 		point.horz_angle_offset_deriv_horz_avg += horz_normal_deriv_horz;
 		point.horz_angle_offset_deriv_second_avg += horz_normal_deriv_second;
 		point.second_angle_offset_deriv_horz_avg += second_normal_deriv_horz;
@@ -420,8 +420,8 @@ namespace pcl
 		point.histogram[ getBinIndex(second_normal_deriv_second, -1/minimum_radius_, 1/minimum_radius_, 10)+80 ] ++;
 
 		// Increment Average Values
-		point.dist_offset_deriv_horz_avg += depth_deriv_horz;
-		point.dist_offset_deriv_second_avg += depth_deriv_second;
+		point.depth_offset_deriv_horz_avg += depth_deriv_horz;
+		point.depth_offset_deriv_second_avg += depth_deriv_second;
 		point.horz_angle_offset_deriv_horz_avg += horz_normal_deriv_horz;
 		point.horz_angle_offset_deriv_second_avg += horz_normal_deriv_second;
 		point.second_angle_offset_deriv_horz_avg += second_normal_deriv_horz;

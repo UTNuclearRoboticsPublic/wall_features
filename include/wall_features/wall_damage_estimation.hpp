@@ -9,7 +9,7 @@
   -- PCL_ADD_POINT4D;                  // preferred way of adding a XYZ+padding
   -- PCL_ADD_NORMAL4D; 				// This adds the member normal[3] which can also be accessed using the point (which is float[4])
   float angle_offset_avg; 			// Average offset in angle between local normal vectors of each neighbor point and the expected normal vector of the containing plane primitive definition
-  float dist_offset_avg; 			// Average offset in position between each neighbor point and the containing plane primitive definition
+  float depth_offset_avg; 			// Average offset in position between each neighbor point and the containing plane primitive definition
   float	histogram[80];
 */
 namespace pcl
@@ -135,7 +135,7 @@ namespace pcl
 			point_to_wall.x = point.x + wall_normal.normal_x*wall_distance;
 			point_to_wall.y = point.y + wall_normal.normal_y*wall_distance;
 			point_to_wall.z = point.z + wall_normal.normal_z*wall_distance;
-			point.dist_offset = (point_to_wall.x*wall_normal.normal_x + point_to_wall.y*wall_normal.normal_y + point_to_wall.z*wall_normal.normal_z)/wall_normal_mag;
+			point.depth_offset = (point_to_wall.x*wall_normal.normal_x + point_to_wall.y*wall_normal.normal_y + point_to_wall.z*wall_normal.normal_z)/wall_normal_mag;
 
 			output.points.push_back(point);
 		}
@@ -268,7 +268,7 @@ namespace pcl
 			for(int j=0; j<bins; j++)
 				histogram_point.histogram[j] = 0;
 			histogram_point.angle_offset_avg = 0;
-			histogram_point.dist_offset_avg = 0;
+			histogram_point.depth_offset_avg = 0;
 			histogram_point.x = interest_points.points[i].x;
 			histogram_point.y = interest_points.points[i].y;
 			histogram_point.z = interest_points.points[i].z;
@@ -291,20 +291,20 @@ namespace pcl
 		  			else if(hist_ind_angle > bins)
 		  				hist_ind_angle = bins;
 		  			histogram_point.histogram[hist_ind_angle]++;
-		  			int hist_ind_dist = floor( bins/2 * (input.points[nearest_indices[j]].dist_offset - dist_min_) / (dist_max_ - dist_min_) );
+		  			int hist_ind_dist = floor( bins/2 * (input.points[nearest_indices[j]].depth_offset - dist_min_) / (dist_max_ - dist_min_) );
 		  			if(hist_ind_dist <= 0)
 		  				hist_ind_dist = 0;
 		  			else if(hist_ind_dist > bins)
 		  				hist_ind_dist = bins;
 		  			histogram_point.histogram[hist_ind_dist+bins/2]++;
 		  			histogram_point.angle_offset_avg += input.points[nearest_indices[j]].angle_offset;
-		  			histogram_point.dist_offset_avg += input.points[nearest_indices[j]].dist_offset;
+		  			histogram_point.depth_offset_avg += input.points[nearest_indices[j]].depth_offset;
 		  			avg_x += input.points[nearest_indices[j]].x;
 		  			avg_y += input.points[nearest_indices[j]].y;
 		  			avg_z += input.points[nearest_indices[j]].z;
 		  		}
 		  		histogram_point.angle_offset_avg /= k_;
-		  		histogram_point.dist_offset_avg /= k_;
+		  		histogram_point.depth_offset_avg /= k_;
 			}
 			else 
 				ROS_ERROR_STREAM_THROTTLE(0.1, "[WallDamageEstimation] KdTree Nearest Neighbor search failed! Unable to populate histogram for point " << i << "with XYZ values " << interest_points.points[i].x << " " << interest_points.points[i].y << " " << interest_points.points[i].z << ". This message throttled...");

@@ -236,7 +236,7 @@ int main (int argc, char **argv)
   {
     lower_angle_bin_limit = wall_damage_cloud->points[0].angle_offset;
     upper_angle_bin_limit = lower_angle_bin_limit;
-    lower_dist_bin_limit = wall_damage_cloud->points[0].dist_offset;
+    lower_dist_bin_limit = wall_damage_cloud->points[0].depth_offset;
     upper_dist_bin_limit = lower_dist_bin_limit;
     for(int i=0; i<wall_damage_cloud->size(); i++)
     {
@@ -244,10 +244,10 @@ int main (int argc, char **argv)
         lower_angle_bin_limit = wall_damage_cloud->points[i].angle_offset;
       if(wall_damage_cloud->points[i].angle_offset > upper_angle_bin_limit)
         upper_angle_bin_limit = wall_damage_cloud->points[i].angle_offset;
-      if(wall_damage_cloud->points[i].dist_offset < lower_dist_bin_limit)
-        lower_dist_bin_limit = wall_damage_cloud->points[i].dist_offset;
-      if(wall_damage_cloud->points[i].dist_offset > upper_dist_bin_limit)
-        upper_dist_bin_limit = wall_damage_cloud->points[i].dist_offset;
+      if(wall_damage_cloud->points[i].depth_offset < lower_dist_bin_limit)
+        lower_dist_bin_limit = wall_damage_cloud->points[i].depth_offset;
+      if(wall_damage_cloud->points[i].depth_offset > upper_dist_bin_limit)
+        upper_dist_bin_limit = wall_damage_cloud->points[i].depth_offset;
     }
   }
   else

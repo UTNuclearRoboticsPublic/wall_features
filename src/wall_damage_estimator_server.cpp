@@ -193,7 +193,7 @@ bool WallDamageEstimatorServer::estimateWallDamageHistogram(wall_features::wall_
 	{
 		req.lower_angle_bin_limit = wall_damage_ptr_->points[0].angle_offset;
 		req.upper_angle_bin_limit = req.lower_angle_bin_limit;
-		req.lower_dist_bin_limit = wall_damage_ptr_->points[0].dist_offset;
+		req.lower_dist_bin_limit = wall_damage_ptr_->points[0].depth_offset;
 		req.upper_dist_bin_limit = req.lower_dist_bin_limit;
 		for(int i=0; i<wall_damage_ptr_->size(); i++)
 		{
@@ -201,10 +201,10 @@ bool WallDamageEstimatorServer::estimateWallDamageHistogram(wall_features::wall_
 				req.lower_angle_bin_limit = wall_damage_ptr_->points[i].angle_offset;
 			if(wall_damage_ptr_->points[i].angle_offset > req.upper_angle_bin_limit)
 				req.upper_angle_bin_limit = wall_damage_ptr_->points[i].angle_offset;
-			if(wall_damage_ptr_->points[i].dist_offset < req.lower_dist_bin_limit)
-				req.lower_dist_bin_limit = wall_damage_ptr_->points[i].dist_offset;
-			if(wall_damage_ptr_->points[i].dist_offset > req.upper_dist_bin_limit)
-				req.upper_dist_bin_limit = wall_damage_ptr_->points[i].dist_offset;
+			if(wall_damage_ptr_->points[i].depth_offset < req.lower_dist_bin_limit)
+				req.lower_dist_bin_limit = wall_damage_ptr_->points[i].depth_offset;
+			if(wall_damage_ptr_->points[i].depth_offset > req.upper_dist_bin_limit)
+				req.upper_dist_bin_limit = wall_damage_ptr_->points[i].depth_offset;
 		}
 	}
 	ROS_DEBUG_STREAM("[WallDamageEstimator] Bin limits: " << req.lower_angle_bin_limit << " " << req.upper_angle_bin_limit << " " << req.lower_dist_bin_limit << " " << req.upper_dist_bin_limit);

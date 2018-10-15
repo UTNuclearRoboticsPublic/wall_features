@@ -17,7 +17,7 @@ struct PointWallDamage
   PCL_ADD_POINT4D;                  // preferred way of adding a XYZ+padding
   PCL_ADD_NORMAL4D;         // This adds the member normal[3] which can also be accessed using the point (which is float[4])
   float angle_offset;         // Offset in angle between local normal vector and expected normal vector of the containing plane primitive definition
-  float dist_offset;        // Offset in position between the point and the containing plane primitive definition
+  float depth_offset;        // Offset in position between the point and the containing plane primitive definition
   PCL_ADD_INTENSITY;
   PCL_ADD_RGB; 
 
@@ -38,7 +38,7 @@ POINT_CLOUD_REGISTER_POINT_STRUCT (pcl::PointWallDamage,
                                    (float, normal_y, normal_y)
                                    (float, normal_z, normal_z)
                                    (float, angle_offset, angle_offset)
-                                   (float, dist_offset, dist_offset)
+                                   (float, depth_offset, depth_offset)
                                    (float, horz_normal_offset, horz_normal_offset)
                                    (float, second_normal_offset, second_normal_offset)
                                    (float, intensity, intensity)

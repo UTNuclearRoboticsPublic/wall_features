@@ -15,10 +15,10 @@ struct ITWFSignature90
   float	histogram[90];				// 40 points for distance deviation, 40 points for angle deviation - might change this later... 
   float horz_angle_offset_avg;       // Average offset in horizontal angle between local normal vectors of all neighbor points and the expected normal vector of the containing plane primitive definition
   float second_angle_offset_avg;       // Average offset in secondary angle between local normal vectors of all neighbor points and the expected normal vector of the containing plane primitive definition
-  float dist_offset_avg;      // Average offset in position between all neighbor points and the containing plane primitive definition
+  float depth_offset_avg;      // Average offset in position between all neighbor points and the containing plane primitive definition
   // The average values of the various partial derivatives in X and Y
-  float dist_offset_deriv_horz_avg;
-  float dist_offset_deriv_second_avg;
+  float depth_offset_deriv_horz_avg;
+  float depth_offset_deriv_second_avg;
   float horz_angle_offset_deriv_horz_avg;
   float horz_angle_offset_deriv_second_avg;
   float second_angle_offset_deriv_horz_avg;
@@ -41,7 +41,7 @@ POINT_CLOUD_REGISTER_POINT_STRUCT (pcl::ITWFSignature90,
                                    (float[90], histogram, histogram)
                                    (float, horz_angle_offset_avg, horz_angle_offset_avg)
                                    (float, second_angle_offset_avg, second_angle_offset_avg)
-                                   (float, dist_offset_avg, dist_offset_avg)
+                                   (float, depth_offset_avg, depth_offset_avg)
 )
 PCL_EXPORTS std::ostream& operator << (std::ostream& os, const pcl::ITWFSignature90& p);
 
@@ -72,7 +72,7 @@ struct ITWFSignature210
 {
   PCL_ADD_POINT4D;                  // preferred way of adding a XYZ+padding
   float histogram[210];        // 40 points for distance deviation, 40 points for angle deviation - might change this later... 
-  float dist_offset_avg;      // Average offset in position between all neighbor points and the containing plane primitive definition
+  float depth_offset_avg;      // Average offset in position between all neighbor points and the containing plane primitive definition
   float horz_angle_offset_avg;       // Average offset in horizontal angle between local normal vectors of all neighbor points and the expected normal vector of the containing plane primitive definition
   float second_angle_offset_avg;       // Average offset in secondary angle between local normal vectors of all neighbor points and the expected normal vector of the containing plane primitive definition
   float intensity_avg;
@@ -80,8 +80,8 @@ struct ITWFSignature210
   float g_avg;
   float b_avg;
   // The average values of the various partial derivatives in X and Y
-  float dist_offset_deriv_horz_avg;
-  float dist_offset_deriv_second_avg;
+  float depth_offset_deriv_horz_avg;
+  float depth_offset_deriv_second_avg;
   float horz_angle_offset_deriv_horz_avg;
   float horz_angle_offset_deriv_second_avg;
   float second_angle_offset_deriv_horz_avg;
@@ -114,7 +114,7 @@ POINT_CLOUD_REGISTER_POINT_STRUCT (pcl::ITWFSignature210,
                                    (float, y, y)
                                    (float, z, z)
                                    (float[210], histogram, histogram)
-                                   (float, dist_offset_avg, dist_offset_avg)
+                                   (float, depth_offset_avg, depth_offset_avg)
                                    (float, horz_angle_offset_avg, horz_angle_offset_avg)
                                    (float, second_angle_offset_avg, second_angle_offset_avg)
                                    (float, intensity_avg, intensity_avg)

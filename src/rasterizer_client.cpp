@@ -129,7 +129,7 @@ int main(int argc, char** argv)
 	//image_pub.publish(srv.response.output_image);
 
 	cv_bridge::CvImagePtr grayscale_ptr(new cv_bridge::CvImage);
-	grayscale_ptr = cv_bridge::toCvCopy(srv.response.output_image, sensor_msgs::image_encodings::BGR8);
+	grayscale_ptr = cv_bridge::toCvCopy(srv.response.output_depth_image, sensor_msgs::image_encodings::BGR8);
 	cv::cvtColor(grayscale_ptr->image, grayscale_ptr->image, cv::COLOR_BGR2GRAY);
 
 

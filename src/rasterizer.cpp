@@ -91,7 +91,7 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
     // ------------------------------------------------------------------------
 	// --------------------------- Remove Outliers ----------------------------
 	// ------------------------------------------------------------------------
-	pcl::RadiusOutlierRemoval<pcl::PointXYZ> filter;
+	pcl::RadiusOutlierRemoval<PointType> filter;
 	PCP outlierless_cloud_ptr(new PC);
 	if(req.outlier_filter)
 	{
@@ -147,7 +147,7 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
     // ------------------------------------------------------------------------
 	// -------------------------- Transform Cloud --------------------------
 	// ------------------------------------------------------------------------
-	// Rotate cloud to be on YZ plane
+	// Rotate cloud to be on XZ plane
 	res.rotated_cloud = PointcloudUtilities::rotatePlaneToXZ(initial_voxelized_cloud, coefficients->values);
 	PCP rotated_plane_ptr(new PC());
 	pcl::fromROSMsg(res.rotated_cloud, *rotated_plane_ptr);
@@ -156,8 +156,8 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 	PCP transformed_plane_ptr(new PC());
 	// Find Translation
 	res.transformed_cloud = PointcloudUtilities::translatePlaneToXZ(res.rotated_cloud);
-	float min_x, max_x, min_y, max_y, min_z, max_z;
-	PointcloudUtilities::cloudLimits(res.rotated_cloud, &min_x, &max_x, &min_y, &max_y, &min_z, &max_z);
+	float min_x, max_x, min_y, max_y, min_z, max_z, min_intensity, max_intensity;
+	PointcloudUtilities::cloudLimits(res.rotated_cloud, &min_x, &max_x, &min_y, &max_y, &min_z, &max_z, &min_intensity, &max_intensity);
 	float mean_y = PointcloudUtilities::meanValue(res.rotated_cloud, 'y');
 	res.transformed_cloud.header.stamp = req.input_cloud.header.stamp;
 	res.transformed_cloud.header.frame_id = req.input_cloud.header.frame_id;
@@ -197,8 +197,10 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 	int image_hgt = int( std::ceil( (max_z - min_z) / req.pixel_hgt ) );
 	int image_wdt = int( std::ceil( (max_x - min_x) / req.pixel_wdt ) );
 	// Create Output Objects
-	cv_bridge::CvImagePtr wall_cv(new cv_bridge::CvImage);
-	cv::Mat img(image_hgt,image_wdt,CV_8UC3,cv::Scalar(0,0,0));
+	cv_bridge::CvImagePtr wall_depth_cv(new cv_bridge::CvImage);
+	cv_bridge::CvImagePtr wall_intensity_cv(new cv_bridge::CvImage);
+	cv::Mat depth_img(image_hgt,image_wdt,CV_8UC1,cv::Scalar(0));
+	cv::Mat intensity_img(image_hgt,image_wdt,CV_8UC1,cv::Scalar(0));
 	// Check which pixels are occupied
 	bool occupied[image_hgt][image_wdt];
 	for(int i=0; i<image_hgt; i++)
@@ -206,9 +208,8 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 		for(int j=0; j<image_wdt; j++)
 		{
 			occupied[i][j] = false;
-			img.at<cv::Vec3b>(i,j)[2] = 0; 		// R
-			img.at<cv::Vec3b>(i,j)[1] = 0;		// G
-			img.at<cv::Vec3b>(i,j)[0] = 0;		// B
+			depth_img.at<uchar>(i,j) = 0; 		// R
+			intensity_img.at<uchar>(i,j) = 0; 		// R
 		}
 	}
 
@@ -219,53 +220,90 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 		int i = int(floor(-voxelized_cloud_ptr->points[k].z / req.pixel_hgt));
 		int j = int(floor(voxelized_cloud_ptr->points[k].x / req.pixel_wdt));
 
-		//img.at<cv::Vec3b>(i,j)[4] = 1;		// Offset
-		//img.at<cv::Vec3b>(i,j)[3] = 1;		// I
 		float depth_color = (voxelized_cloud_ptr->points[k].y-min_y+mean_y)/(max_y-min_y);
-		int colormap = 0;
-		if(colormap == 0)
-		{
-			img.at<cv::Vec3b>(i,j)[2] = floor(depth_color*255); 		// R
-			img.at<cv::Vec3b>(i,j)[1] = floor(depth_color*255);		// G
-			img.at<cv::Vec3b>(i,j)[0] = floor(depth_color*255);		// B
-		}
-		if(colormap == 1)
-		{
-			if(depth_color < 0 || depth_color > 1)
-				ROS_ERROR_STREAM("oops " << i << " " << j << " " <<  k << " " << depth_color);
-			if(depth_color < 0.5)
-				img.at<cv::Vec3b>(i,j)[2] = 0; 							// Red
-			else 
-				img.at<cv::Vec3b>(i,j)[2] = 2*(depth_color-0.5)*255;
-			if(depth_color < 0.5)
-				img.at<cv::Vec3b>(i,j)[1] = 2*depth_color*255; 			// Green
-			else 
-				img.at<cv::Vec3b>(i,j)[1] = 2*(1-depth_color)*255;
-			if(depth_color < 0.5)
-				img.at<cv::Vec3b>(i,j)[0] = 2*(0.5-depth_color)*255; 	// Blue
-			else 
-				img.at<cv::Vec3b>(i,j)[0] = 0;
-		}
-		if(colormap == 2)
-		{
-			img.at<cv::Vec3b>(i,j)[2] = floor(depth_color*255); 		// R
-			img.at<cv::Vec3b>(i,j)[1] = 0;		// G
-			img.at<cv::Vec3b>(i,j)[0] = 255;		// B
-		}
+		float intensity_color = (voxelized_cloud_ptr->points[k].intensity-min_intensity)/(max_intensity-min_intensity);
+		depth_img.at<uchar>(i,j) = floor(depth_color*255);
+		intensity_img.at<uchar>(i,j) = floor(intensity_color*255);
+
 		// Note that we found another good pixel
 		res.image_fill_ratio++;
+		occupied[i][j] = true;
 	}
-	res.image_fill_ratio /= (image_wdt*image_hgt);
-	img.copyTo(wall_cv->image);
+
+	if(!req.fill_holes)
+		res.image_fill_ratio /= (image_wdt*image_hgt);
+	else
+	{
+		pcl::search::KdTree<pcl::PointXYZI> tree;
+		tree.setInputCloud(voxelized_cloud_ptr);
+
+		for(int i=0; i<image_hgt; i++)
+			for(int j=0; j<image_wdt; j++)
+			{
+				if(occupied[i][j])
+					continue;
+				pcl::PointXYZI source_point;
+				source_point.x = j*req.pixel_wdt;
+				source_point.y = 0;
+				source_point.z = -i*req.pixel_hgt;
+				std::vector<int> nearest_indices;
+				std::vector<float> nearest_dist_squareds;
+				float depth = 0;
+				float intensity = 0;
+				float total_inverse_distance = 0;
+				if(tree.nearestKSearch(source_point, req.hole_filling_neighbor_count, nearest_indices, nearest_dist_squareds))
+				{
+					for(int k=0; k<nearest_indices.size(); k++)
+					{
+						pcl::PointXYZI target_point = voxelized_cloud_ptr->points[nearest_indices[k]];
+						float dist = pow(nearest_dist_squareds[k],0.5);
+						float depth_color = (target_point.y-min_y+mean_y)/(max_y-min_y);
+						depth += depth_color / dist;
+						float intensity_color = (target_point.intensity-min_intensity)/(max_intensity-min_intensity);
+						intensity += intensity_color / dist;
+						total_inverse_distance += 1 / dist;
+					}
+					depth_img.at<uchar>(i,j) = 255 * depth / total_inverse_distance;
+					intensity_img.at<uchar>(i,j) = 255 * intensity / total_inverse_distance;
+				}
+			}
+
+/*		cv::Mat filled(image_hgt,image_wdt,CV_8UC1,cv::Scalar(0));
+		cv::Mat mask = (cv::Mat_<double>(3,3) << 0.125, 0.125, 0.125, 0.125, 0, 0.125, 0.125, 0.125, 0.125);
+		for(int i=0; i<image_hgt; i++)
+			for(int j=0; j<image_wdt; j++)
+			{
+				if(occupied[i][j])
+					continue;
+				float weight_total = 0;
+				for(int i_off=-2; i_off<3; i_off++)
+					for(int j_off=-2; j_off<3; j_off++)
+					{
+						if(i_off+i < 0 || i_off+i > image_hgt || j_off+j < 0 || j_off+j > image_hgt)
+							continue;
+						filled.at<uchar>(i,j) += depth_img.at<uchar>(i+i_off,j+j_off) * mask.at<double>(i_off,j_off);
+						weight_total += mask.at<double>(i_off,j_off);
+					}
+				filled.at<uchar>(i,j) /= weight_total;
+			}
+		cv::addWeighted( wall_depth_cv->image, 1, filled, 1, 0, wall_depth_cv->image ); */
+	} 
+	depth_img.copyTo(wall_depth_cv->image);
+	intensity_img.copyTo(wall_intensity_cv->image);
+
 	//wall_cv->encoding = cv_bridge::CV_8UC3; 
 	// Output
-	wall_cv->toImageMsg(res.output_image);
-	res.output_image.encoding = sensor_msgs::image_encodings::BGR8;
+	wall_depth_cv->toImageMsg(res.output_depth_image);
+	wall_intensity_cv->toImageMsg(res.output_intensity_image);
+	res.output_depth_image.encoding = sensor_msgs::image_encodings::MONO8;
+	res.output_intensity_image.encoding = sensor_msgs::image_encodings::MONO8;
 	res.image_wdt = image_wdt;
 	res.image_hgt = image_hgt;
 
-	res.depth_min = min_y - mean_y;
-	res.depth_max = max_y - mean_y;
+	res.depth_min = min_y;
+	res.depth_max = max_y;
+	res.intensity_min = min_intensity;
+	res.intensity_max = max_intensity;
 	for (int i=0; i < coefficients->values.size(); i++)
 		res.plane_coefficients.push_back(coefficients->values[i]);
 
@@ -285,6 +323,6 @@ int main(int argc, char** argv)
 	if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug) )
     	ros::console::notifyLoggerLevelsChanged();	
 
-	Rasterizer<pcl::PointXYZ> rasterizer;
+	Rasterizer<pcl::PointXYZI> rasterizer;
 
 }

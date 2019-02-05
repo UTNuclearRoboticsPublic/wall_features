@@ -14,9 +14,13 @@ float32 threshold_distance
 float32 pixel_wdt
 float32 pixel_hgt
 
+bool fill_holes
+int32 hole_filling_neighbor_count
+
 ---
 
-sensor_msgs/Image output_image
+sensor_msgs/Image output_depth_image
+sensor_msgs/Image output_intensity_image
 sensor_msgs/PointCloud2 outlierless_cloud
 sensor_msgs/PointCloud2 plane_cloud
 sensor_msgs/PointCloud2 rotated_cloud
@@ -27,4 +31,6 @@ int32 image_wdt
 int32 image_hgt
 float32 depth_max
 float32 depth_min
+int32 intensity_min
+int32 intensity_max
 float32[] plane_coefficients

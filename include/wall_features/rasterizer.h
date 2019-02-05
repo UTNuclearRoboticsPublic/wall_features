@@ -13,6 +13,7 @@
 
 // Basic PCL Stuff
 #include <pcl_conversions/pcl_conversions.h> 			// fromROSMsg(), toROSMsg() 
+#include <pcl/kdtree/kdtree.h>
 // Segmentation
 #include <pcl/segmentation/sac_segmentation.h> 			// SACSegmentation
 #include <pcl/filters/extract_indices.h> 				// Extract target points

@@ -22,5 +22,4 @@ template class pcl::WallDamageHistogramEstimation<pcl::PointWallDamage, pcl::Poi
 template class pcl::WallDamageHistogramEstimation<pcl::PointWallDamage, pcl::PointXYZRGB, pcl::WallDamageHistogram>;
 template class pcl::WallDamageHistogramEstimation<pcl::PointWallDamage, pcl::PointXYZI, pcl::WallDamageHistogram>;
 
-template class pcl::ITWFEstimation<pcl::PointWallDamage, pcl::PointWallDamage, pcl::ITWFSignature90>;
-template class pcl::ITWFEstimation<pcl::PointWallDamage, pcl::PointWallDamage, pcl::ITWFSignature210>;
+template class pcl::ITWFEstimation<pcl::PointWallDamage, pcl::PointWallDamage, pcl::ITWFSignature84>;

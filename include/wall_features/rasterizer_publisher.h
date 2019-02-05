@@ -28,7 +28,8 @@ private:
 	ros::Publisher translated_pub_;
 	ros::Publisher voxelized_pub_;
 	ros::Publisher output_pub_;
-	ros::Publisher image_pub_;
+	ros::Publisher depth_image_pub_;
+	ros::Publisher intensity_image_pub_;
 
 	bool has_data_;
 	bool publishers_initialized_;

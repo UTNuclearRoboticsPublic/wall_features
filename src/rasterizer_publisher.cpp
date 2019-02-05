@@ -33,7 +33,8 @@ void RasterizerPublisher::initializePublishers(std::string name)
 	translated_pub_ = nh_.advertise<sensor_msgs::PointCloud2>(name + "/translated", 1, this);
 	voxelized_pub_ = nh_.advertise<sensor_msgs::PointCloud2>(name + "/voxelized", 1, this);
 	output_pub_ = nh_.advertise<sensor_msgs::PointCloud2>(name + "/output", 1, this);
-	image_pub_ = nh_.advertise<sensor_msgs::Image>(name + "/image", 1, this);
+	depth_image_pub_ = nh_.advertise<sensor_msgs::Image>(name + "/depth_image", 1, this);
+	intensity_image_pub_ = nh_.advertise<sensor_msgs::Image>(name + "/intensity_image", 1, this);
 
 	publishers_initialized_ = true;
 }
@@ -58,7 +59,8 @@ void RasterizerPublisher::publish()
 		rotated_pub_.publish(srv_.response.rotated_cloud);
 		translated_pub_.publish(srv_.response.transformed_cloud);
 		output_pub_.publish(srv_.response.output_cloud);
-		image_pub_.publish(srv_.response.output_image);
+		depth_image_pub_.publish(srv_.response.output_depth_image);
+		intensity_image_pub_.publish(srv_.response.output_intensity_image);
 	}
 }
 

@@ -152,4 +152,79 @@ public:
 };
 }
 
+
+
+
+
+
+
+
+// This implementation incorporates LiDAR return intensity 
+namespace pcl {
+struct ITWFSignature84
+{
+  PCL_ADD_POINT4D;                  // preferred way of adding a XYZ+padding
+  float histogram[84];        // 40 points for distance deviation, 40 points for angle deviation - might change this later... 
+  float bin_count[12];          // Number of points in each spatial bin (for density normalization)
+  float depth_offset_avg;      // Average offset in position between all neighbor points and the containing plane primitive definition
+  float horz_angle_offset_avg;       // Average offset in horizontal angle between local normal vectors of all neighbor points and the expected normal vector of the containing plane primitive definition
+  float second_angle_offset_avg;       // Average offset in secondary angle between local normal vectors of all neighbor points and the expected normal vector of the containing plane primitive definition
+  float intensity_avg;
+  float intensity_horz_change_avg;
+  float intensity_second_change_avg;
+  float r_avg;
+  float g_avg;
+  float b_avg;
+
+  static int descriptorSize(){return 84;}
+  friend std::ostream& operator << (std::ostream& os, const ITWFSignature84& p);
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW   // make sure our new allocators are aligned
+} EIGEN_ALIGN16;                    // enforce SSE padding for correct memory alignment
+}
+POINT_CLOUD_REGISTER_POINT_STRUCT (pcl::ITWFSignature84, 
+                                   (float, x, x)
+                                   (float, y, y)
+                                   (float, z, z)
+                                   (float[84], histogram, histogram)
+                                   (float, depth_offset_avg, depth_offset_avg)
+                                   (float, horz_angle_offset_avg, horz_angle_offset_avg)
+                                   (float, second_angle_offset_avg, second_angle_offset_avg)
+                                   (float, intensity_avg, intensity_avg)
+                                   (float, intensity_horz_change_avg, intensity_horz_change_avg)
+                                   (float, intensity_second_change_avg, intensity_second_change_avg)
+                                   (float, r_avg, r_avg)
+                                   (float, g_avg, g_avg)
+                                   (float, b_avg, b_avg)
+)
+PCL_EXPORTS std::ostream& operator << (std::ostream& os, const pcl::ITWFSignature84& p);
+
+
+namespace pcl {
+template <>
+class DefaultPointRepresentation<ITWFSignature84> : public PointRepresentation<ITWFSignature84>
+{
+public:
+  DefaultPointRepresentation ()
+  {
+    nr_dimensions_ = 84;
+  }
+
+  virtual void
+  copyToFloatArray (const ITWFSignature84 &p, float * out) const
+  {
+    for (int i = 0; i < nr_dimensions_; ++i)
+      out[i] = p.histogram[i];
+  }
+};
+}
+
+
+
+
+
+
+
+
+
 #endif // ITWF_H_

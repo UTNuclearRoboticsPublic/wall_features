@@ -7,5 +7,5 @@ rasterizer:
   outlier_neighbors:      1
   max_iterations:         10000
   load_from_bag:          true
-  bag_name:               /home/conor/ros_data/Fake_Walls/Segmented/screwy/1dps.bag  # Faro/segmented_screwy.bag
-  bag_topic:              /target_wall
+  bag_name:               /home/conor/ros_data/trees/58 AHG Bought Panels Rebar/segmented_rocky.bag  # Faro/segmented_screwy.bag
+  bag_topic:              /first_wall

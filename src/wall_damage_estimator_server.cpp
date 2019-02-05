@@ -57,7 +57,9 @@ bool WallDamageEstimatorServer::wallDamageCallback(wall_features::wall_damage_se
 	// 2) VOXELIZATION - downsample clouds to required density
 	//   The size of these clouds determines the size of the outputs from these respective processes
 	//   If the user actually enters particular points to use instead of going for voxels, use those instead
-	voxelizeCloud(input_cloud_ptr_, segmentation_input_ptr_, req.segmentation_cloud_voxel_size, "Segmentation Input Cloud");
+	//   Voxelizing the input cloud for segmentation is unnecessary if the cloud is already segmented 
+	if(!req.is_already_segmented)
+		voxelizeCloud(input_cloud_ptr_, segmentation_input_ptr_, req.segmentation_cloud_voxel_size, "Segmentation Input Cloud");
 	if(req.damage_inliers_given)
 		pcl::fromROSMsg(req.damage_inliers, *wall_damage_input_ptr_);
 	else
@@ -232,8 +234,11 @@ bool WallDamageEstimatorServer::publishClouds(wall_features::wall_damage_service
 
 int main (int argc, char **argv)
 { 
-  ros::init(argc, argv, "wall_damage_estimator");
-  pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS); 
+	ros::init(argc, argv, "wall_damage_estimator");
+	pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS); 
 
-  WallDamageEstimatorServer server;
+	if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug) )
+		ros::console::notifyLoggerLevelsChanged();	
+
+	WallDamageEstimatorServer server;
 }

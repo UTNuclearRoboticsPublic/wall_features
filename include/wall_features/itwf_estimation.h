@@ -36,14 +36,15 @@ namespace pcl
         using Feature<PointInT, PointOutT>::indices_;
         using Feature<PointInT, PointOutT>::input_;
         using Feature<PointInT, PointOutT>::surface_;
-        using Feature<PointInT, PointOutT>::k_;
         using Feature<PointInT, PointOutT>::search_radius_;
         using Feature<PointInT, PointOutT>::search_parameter_; 
         typedef typename Feature<PointInT, PointOutT>::PointCloudOut PointCloudOut;
         typedef typename Feature<PointInT, PointOutT>::PointCloudConstPtr PointCloudConstPtr;
         //int k_;
-        float dist_half_lim_, dist_deriv_half_lim_, minimum_radius_, intensity_lower_value_, intensity_upper_value_;     // Bin Limits
+        float depth_half_lim_, intensity_minimum_, intensity_maximum_;     // Feature Limits
+        int num_spatial_bins_, num_rings_; 
         Eigen::Vector3f in_plane_horz_, in_plane_second_;
+        std::vector<bool> dimension_use_;
 	public:
 		typedef boost::shared_ptr<ITWFEstimation<PointInT,PointInterestT,PointOutT> > Ptr;
 		typedef boost::shared_ptr<const ITWFEstimation<PointInT,PointInterestT,PointOutT> > ConstPtr;
@@ -51,13 +52,17 @@ namespace pcl
 		/** \brief Empty constructor. */
 		ITWFEstimation () 
 		{
-			k_ = 30;
-            dist_half_lim_ = 0.1;
-            dist_deriv_half_lim_ = 0.1;
-            minimum_radius_ = 0.05;
-            intensity_lower_value_ = 0;
-            intensity_upper_value_ = 4000; 
+			search_radius_ = 0.05;
+            depth_half_lim_ = 0.03;
+            intensity_minimum_ = 0;
+            intensity_maximum_ = 6000;
 			feature_name_ = "ITWFEstimation";
+
+            PointOutT temp;
+            num_spatial_bins_ = temp.descriptorSize()/7;
+            num_rings_ = num_spatial_bins_/4;
+            for(int i=0; i<7; i++)
+                dimension_use_.push_back(1);
 		};
 
 		/** \brief Empty destructor */
@@ -78,30 +83,25 @@ namespace pcl
             vpz_ = input_->sensor_origin_.coeff (2);
           } */
         }
-        void setKSearch(int k_search);
-        void setBinLimits(float dist_half_lim, float dist_deriv_half_lim, float minimum_radius);
-        void setBinLimits(float dist_half_lim, float dist_deriv_half_lim, float minimum_radius, float intensity_lower_value, float intensity_upper_value);
+        void setSearchRadius(float search_radius);
+        void setDimensionUse(std::vector<bool> dimension_use) { dimension_use_ = dimension_use; };
+        // Initializing Data
+        void initializeOutputPoint(PointOutT &histogram_point, PointInT input_point);
+        // Updating the Histogram
+        int radialBinChoice(float radial_distance);
+        void incrementHistogram(PointOutT &point, const PointInT source_point, const PointInterestT target_point);   
+        void incrementEmptyBins(int &num_empty_bins, PointOutT histogram_point);
+        void normalizeHistogram(PointOutT &point);
+        // Updating Averages
+        void incrementAverages(PointOutT &histogram_point, PointInT neighbor_point);
+        void normalizeAverages(PointOutT &histogram_point, int num_points);
+        // Set Wall Parameters 
         void setPlaneVectors(Eigen::Vector3f in_plane_horz, Eigen::Vector3f in_plane_second);
         void setPlaneVectors(float horz_x, float horz_y, float horz_z, float second_x, float second_y, float second_z);
         void setWallCoordinateFrame(std::vector<float> wall_coeffs);
-        void findColorDerivatives(const PointInT source_point, const PointInterestT target_point,
-                                    float horz_distance,         float second_distance,
-                                    float &intensity_deriv_horz, float &intensity_deriv_second,
-                                    float &r_deriv_horz,         float &r_deriv_second,
-                                    float &g_deriv_horz,         float &g_deriv_second,
-                                    float &b_deriv_horz,         float &b_deriv_second);
-        void comparePoints(PointOutT &point, const PointInT source_point, const PointInterestT target_point);
-        void addHistogramValues(PointOutT &point, float depth_offset, float normal_offset_horz, float normal_offset_second, 
-                                                  float depth_deriv_horz, float horz_normal_deriv_horz, float second_normal_deriv_horz,
-                                                  float depth_deriv_second, float horz_normal_deriv_second, float second_normal_deriv_second,
-                                                  float intensity, float intensity_deriv_horz, float intensity_deriv_second,
-                                                  float r, float r_deriv_horz, float r_deriv_second,
-                                                  float g, float g_deriv_horz, float g_deriv_second,
-                                                  float b, float b_deriv_horz, float b_deriv_second );    
-        void initializeOutputPoint(PointOutT &histogram_point, pcl::PointWallDamage input_point);
-        void incrementAverages(PointOutT &histogram_point, pcl::PointWallDamage neighbor_point);
-        void normalizeValues(PointOutT &histogram_point, int num_points);
-        int getBinIndex(float target_value, float bin_min, float bin_max, int bin_num);
+        void getPlaneVectors(Eigen::Vector3f &in_plane_horz, Eigen::Vector3f &in_plane_second);
+        // Set Histogram Scales
+        void setHistogramScales(float depth_half_lim, float intensity_minimum, float intensity_maximum);
 	};
 
 

@@ -43,6 +43,22 @@ Normal direction deviation in secondary direction from expected planar wall norm
 - Based on a neighborhood of Point_Wall_Damage points around that, a histogram of their differences from the target point in color, intensity, depth, and normals, as well as the partial derivatives in the horizontal and secondary axes within the plane
 - The average values of each of these variables within the local neighborhood for each point
 
+The following are correspondence matching attempts based on ITWF features, between two different LiDAR scans of the same degraded concrete wall. Scans were generated using the [laser_stitcher](https://github.com/UTNuclearRoboticsPublic/laser_stitcher.git) package with a Hokuyo UTM LiDAR mounted on a spinning servo. 
+
+Correspondence matching using depth deviations:
+
+<img src=images/depth_matching.png width="600">
+
+Correspondence matching using surface normals:
+
+<img src=images/normals_matching.png width="600">
+
+Correspondence matching using intensity:
+
+<img src=images/intensity_matching.png width="600">
+
+These three data types can be used separately or all together to generate correspondences. The individual kinds of data most efficacious for matching within a wall will depend on the condition of the wall itself. I am considering (but have not yet implemented) a scheme to automatically determine a weighting between the different parameters that is likely to work best for a particular target wall (e.g. based on the amount of variation within that parameter in the wall). 
+
 ## Wall Change Estimation
 This subpackage allows the estimation of change between subsequent scans of a planar wall. TWo different interfaces are provided - one for pointcloud space and one for raster space. 
 

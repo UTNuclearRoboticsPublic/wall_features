@@ -80,7 +80,7 @@ namespace pcl
 	//template <typename PointInT> void setInputCloud(const pcl::PointCloud<PointInT> &input);
 
 
-	template <typename PointInT, typename PointInterestT, typename PointOutT> void ITWFEstimation<PointInT, PointInterestT, PointOutT>::buildITWFPoint (PointOutT histogram_point)
+	template <typename PointInT, typename PointInterestT, typename PointOutT> void ITWFEstimation<PointInT, PointInterestT, PointOutT>::buildITWFPoint (PointOutT histogram_point, PointInterestT interest_point)
 	{
 		/*
 		initializeOutputPoint(histogram_point, interest_points.points[i]);

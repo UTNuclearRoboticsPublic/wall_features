@@ -1,6 +1,7 @@
 
 #include <wall_features/rasterizer.h>
 #include <ros/callback_queue.h>
+#include <pcl/filters/crop_box.h>
 
 sensor_msgs::PointCloud2 input_cloud;
 bool found_pointcloud;
@@ -25,12 +26,16 @@ int main(int argc, char** argv)
 	ros::Publisher input_cloud_pub;
 	ros::Publisher output_cloud_pub;
 	ros::Publisher image_pub;
+	ros::Publisher blurred_depth_pub;
+	ros::Publisher image_int_pub;
 	ros::Publisher grad_image_pub;
 	ros::Publisher lap_image_pub;
 	ros::Publisher normals_image_pub;
 	input_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("/rasterizer/input_cloud", 1);
 	output_cloud_pub = nh.advertise<sensor_msgs::PointCloud2>("/rasterizer/output_cloud", 1);
 	image_pub = nh.advertise<sensor_msgs::Image>("/rasterizer/image", 1);
+	blurred_depth_pub = nh.advertise<sensor_msgs::Image>("/rasterizer/image_blurred", 1);
+	image_int_pub = nh.advertise<sensor_msgs::Image>("/rasterizer/image_int", 1);
 	grad_image_pub = nh.advertise<sensor_msgs::Image>("/rasterizer/gradient", 1);
 	lap_image_pub = nh.advertise<sensor_msgs::Image>("/rasterizer/laplacian", 1);
 	normals_image_pub = nh.advertise<sensor_msgs::Image>("/rasterizer/normals", 1);
@@ -44,9 +49,24 @@ int main(int argc, char** argv)
 	nh.param<float>("/rasterizer/outlier_filter_scale", outlier_filter_scale, 0.06);
 	float plane_threshold_distance;
 	nh.param<float>("/rasterizer/plane_threshold_distance", plane_threshold_distance, 0.05);
+	float wall_threshold_distance;
+	nh.param<float>("/rasterizer/wall_threshold_distance", wall_threshold_distance, 0.08);
 	int rad_outlier_min_neighbors, max_iterations;
 	nh.param<int>("/rasterizer/outlier_neighbors", rad_outlier_min_neighbors, 1);
 	nh.param<int>("/rasterizer/max_iterations", max_iterations, 10000);
+
+	bool fill_holes;
+	int hole_filling_neighbors;
+	float hole_filling_max_dist;
+	nh.param<bool>("/rasterizer/fill_holes", fill_holes, false);
+	nh.param<int>("/rasterizer/hole_filling_neighbors", hole_filling_neighbors, 3);
+	nh.param<float>("/rasterizer/hole_filling_max_dist", hole_filling_max_dist, 0.05);
+
+	bool trim_edges;
+	std::vector<float> edge_trimming_vector;
+	nh.param<bool>("/rasterizer/trim_edges", trim_edges, false);
+	if(trim_edges)
+		nh.getParam("/rasterizer/trim_vector", edge_trimming_vector);
 
 	bool load_from_bag;
 	nh.param<bool>("/rasterizer/load_from_bag", load_from_bag, true);
@@ -96,6 +116,28 @@ int main(int argc, char** argv)
 		}
 	}
 
+	if(trim_edges)
+	{
+		pcl::PointCloud<pcl::PointXYZI>::Ptr input_cloud_ptr(new pcl::PointCloud<pcl::PointXYZI>());
+		pcl::fromROSMsg(input_cloud, *input_cloud_ptr);
+		pcl::PointCloud<pcl::PointXYZI>::Ptr cropped_cloud(new pcl::PointCloud<pcl::PointXYZI>());
+		pcl::CropBox<pcl::PointXYZI> crop;
+		crop.setInputCloud(input_cloud_ptr);
+		// Set dimensions of clipping box:
+		Eigen::Vector4f min_point = Eigen::Vector4f(edge_trimming_vector[0], -100, edge_trimming_vector[2], 0);
+		Eigen::Vector4f max_point = Eigen::Vector4f(edge_trimming_vector[1], 100, edge_trimming_vector[3], 0);
+		crop.setMin(min_point);
+		crop.setMax(max_point);
+		// Set pose of clipping box: 
+		Eigen::Vector3f translation = Eigen::Vector3f(0, 0, 0);
+		Eigen::Vector3f rotation = Eigen::Vector3f(0, 0, 0);
+		crop.setTranslation(translation);
+		crop.setRotation(rotation);
+
+		crop.filter(*cropped_cloud);
+		pcl::toROSMsg(*cropped_cloud, input_cloud);
+	}
+
 	ros::ServiceClient client = nh.serviceClient<wall_features::rasterizer_service>("rasterizer");
 	wall_features::rasterizer_service srv;
 	srv.request.input_cloud = input_cloud;
@@ -103,9 +145,13 @@ int main(int argc, char** argv)
 	srv.request.outlier_filter_scale = outlier_filter_scale;
 	srv.request.rad_outlier_min_neighbors = rad_outlier_min_neighbors;
 	srv.request.max_iterations = max_iterations;
-	srv.request.threshold_distance = plane_threshold_distance;
+	srv.request.plane_threshold_distance = plane_threshold_distance;
+	srv.request.wall_threshold_distance = wall_threshold_distance;
 	srv.request.pixel_wdt = pixel_width;
 	srv.request.pixel_hgt = pixel_height;
+	srv.request.fill_holes = fill_holes;
+	srv.request.hole_filling_neighbor_count = hole_filling_neighbors;
+	srv.request.hole_filling_max_dist = hole_filling_max_dist;
 
 	// Run Service
 	while(ros::ok())
@@ -133,13 +179,29 @@ int main(int argc, char** argv)
 	cv::cvtColor(grayscale_ptr->image, grayscale_ptr->image, cv::COLOR_BGR2GRAY);
 
 
+	cv_bridge::CvImagePtr unsmoothed_depth_ptr(new cv_bridge::CvImage);
+	unsmoothed_depth_ptr = cv_bridge::toCvCopy(srv.response.output_depth_image, sensor_msgs::image_encodings::BGR8);
+	cv_bridge::CvImagePtr unsmoothed_intensity_ptr(new cv_bridge::CvImage);
+	unsmoothed_intensity_ptr = cv_bridge::toCvCopy(srv.response.output_intensity_image, sensor_msgs::image_encodings::BGR8);
+
+
+
 	//cv_bridge::CvImagePtr raster_image_ptr(new cv_bridge::CvImage);
 	cv_bridge::CvImagePtr gradient_image(new cv_bridge::CvImage);
 	sensor_msgs::Image gradient_msg;
 	//cv::Mat gradient_mat(res.image_wdt, res.image_hgt, CV_8UC3, cv::Scalar(0,0,0));
 	cv::Mat gradient_mat;
-	cv::GaussianBlur(grayscale_ptr->image, grayscale_ptr->image, cv::Size(3,3), 0, 0, cv::BORDER_DEFAULT);
-	
+	int blur_size;
+	nh.param<int>("rasterizer/blur_size", blur_size, 10);
+	ROS_INFO_STREAM("image size: " << grayscale_ptr->image.rows << "x" << grayscale_ptr->image.cols << " with blur size " << blur_size);
+	cv::GaussianBlur(grayscale_ptr->image, grayscale_ptr->image, cv::Size(blur_size,blur_size), 0, 0, cv::BORDER_DEFAULT);
+	ROS_INFO_STREAM("made the blur");
+	sensor_msgs::Image blurred_depth_msg;
+	grayscale_ptr->toImageMsg(blurred_depth_msg);
+	blurred_depth_msg.encoding = "mono8";
+	blurred_depth_pub.publish(blurred_depth_msg);
+
+
 	cv::Mat gradient_x, gradient_y;
 	cv::Mat abs_gradient_x, abs_gradient_y;
 	int ddepth = 3; // cv::CV_16S
@@ -267,7 +329,23 @@ int main(int argc, char** argv)
 	sensor_msgs::Image grayscale_msg;
 	grayscale_ptr->toImageMsg(grayscale_msg);
 	grayscale_msg.encoding = "mono8";
-	image_pub.publish(grayscale_msg);
+	image_pub.publish(srv.response.output_depth_image);
+	image_int_pub.publish(srv.response.output_intensity_image);
+
+	std::vector<int> low_compression_params;
+    low_compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
+    low_compression_params.push_back(0);
+
+
+    // Save Output Images
+	cv::imwrite("raster_output_depth_low.png", unsmoothed_depth_ptr->image, low_compression_params);
+	cv::imwrite("raster_output_intensity_low.png", unsmoothed_intensity_ptr->image, low_compression_params);
+	// Save Point Cloud Raster
+	rosbag::Bag bag;
+	std::string bag_name = "rasterized_cloud.bag";
+	bag.open(bag_name, rosbag::bagmode::Write);
+	bag.write("rasterized_cloud", ros::Time::now(), srv.response.output_cloud);
+	ROS_INFO_STREAM("[LaserStitcher] Saved a ROSBAG to the file " << bag_name);
 
 
 	ros::Duration(3).sleep();

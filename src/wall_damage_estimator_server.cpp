@@ -94,7 +94,8 @@ bool WallDamageEstimatorServer::wallDamageCallback(wall_features::wall_damage_se
 	// -------------------------------------------------------------------
 	// 5) Generate Wall Damage Histogram Cloud
 	//   Generate cloud of local histograms of offsets from expected cloud in position and surface normals
-	estimateWallDamageHistogram(req, res);
+	if(req.estimate_histogram)
+		estimateWallDamageHistogram(req, res);
 
 	// -------------------------------------------------------------------
 	// 6) Publish Outputs

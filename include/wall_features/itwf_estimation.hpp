@@ -79,6 +79,46 @@ namespace pcl
 	template <typename PointInT, typename PointInterestT, typename PointOutT> void ITWFEstimation<PointInT, PointInterestT, PointOutT>::computeFeature (pcl::PointCloud<PointOutT> &output){ }
 	//template <typename PointInT> void setInputCloud(const pcl::PointCloud<PointInT> &input);
 
+
+	template <typename PointInT, typename PointInterestT, typename PointOutT> void ITWFEstimation<PointInT, PointInterestT, PointOutT>::buildITWFPoint (PointOutT histogram_point)
+	{
+		/*
+		initializeOutputPoint(histogram_point, interest_points.points[i]);
+
+		std::vector<int> nearest_indices;
+		std::vector<float> nearest_dist_squareds;
+
+		ROS_DEBUG_STREAM_THROTTLE(1, "[ITWFEstimation] Working on a histogram point with index " << i);
+
+		if ( kdtree.radiusSearch (interest_points_xyz_ptr->points[i], search_radius_, nearest_indices, nearest_dist_squareds) > 0 )
+		{
+			for (size_t j = 0; j < nearest_indices.size (); ++j)
+			{
+	  			incrementHistogram(histogram_point, interest_points.points[i], input.points[nearest_indices[j]]);
+	  			incrementAverages(histogram_point, input.points[nearest_indices[j]]);
+//		  			if(i == 100 || i == 300 || i == 563)
+//		  				ROS_INFO_STREAM("temp: " << i << " " << j << " " << nearest_indices.size());
+	  		}
+	  		// Normalize all values by the number of neighbor points used
+	  		normalizeAverages(histogram_point, nearest_indices.size());
+	  		normalizeHistogram(histogram_point);
+//		  		if(i == 100 || i == 300 || i == 563)
+//		  		{
+//		  			ROS_ERROR_STREAM("itwf intensity: " << histogram_point.histogram[0+36] << " " << histogram_point.histogram[2+36] << " " << histogram_point.histogram[4+36] << " " << histogram_point.histogram[7+36] << " " << histogram_point.histogram[9+36] << " " << histogram_point.histogram[11+36] << " depth: " 
+//														  << histogram_point.histogram[0] << " " << histogram_point.histogram[2] << " " << histogram_point.histogram[4] << " " << histogram_point.histogram[7] << " " << histogram_point.histogram[9] << " " << histogram_point.histogram[11] << " horz: " 
+//														  << histogram_point.histogram[0+12] << " " << histogram_point.histogram[2+12] << " " << histogram_point.histogram[4+12] << " " << histogram_point.histogram[7+12] << " " << histogram_point.histogram[9+12] << " " << histogram_point.histogram[11+12] << " second: " 
+//														  << histogram_point.histogram[0+24] << " " << histogram_point.histogram[2+24] << " " << histogram_point.histogram[4+24] << " " << histogram_point.histogram[7+24] << " " << histogram_point.histogram[9+24] << " " << histogram_point.histogram[11+24] << " others: "  
+//														  << histogram_point.histogram[0+48] << " " << histogram_point.histogram[2+48] << " " << histogram_point.histogram[4+60] << " " << histogram_point.histogram[7+60] << " " << histogram_point.histogram[9+72] << " " << histogram_point.histogram[11+72]);  
+//		  			ROS_ERROR_STREAM("temp " << histogram_point.x << " " << histogram_point.y << " " << histogram_point.z);		
+//		  		}
+		}
+		else 
+			ROS_ERROR_STREAM_THROTTLE(0.1, "[ITWFEstimation] KdTree Nearest Neighbor search failed! Unable to populate histogram for point " << i << "with XYZ values " << interest_points.points[i].x << " " << interest_points.points[i].y << " " << interest_points.points[i].z << ". This message throttled...");
+		output.points.push_back(histogram_point); 	
+		*/
+	}
+
+
 	template <typename PointInT, typename PointInterestT, typename PointOutT> void 
 	ITWFEstimation<PointInT, PointInterestT, PointOutT>::compute (const pcl::PointCloud<PointInT> &input, 
 																pcl::PointCloud<PointOutT> &output)
@@ -144,26 +184,29 @@ namespace pcl
 				{
 		  			incrementHistogram(histogram_point, interest_points.points[i], input.points[nearest_indices[j]]);
 		  			incrementAverages(histogram_point, input.points[nearest_indices[j]]);
-		  			if(i == 100 || i == 300 || i == 563)
-		  				ROS_INFO_STREAM("temp: " << i << " " << j << " " << nearest_indices.size());
+	//		  			if(i == 100 || i == 300 || i == 563)
+	//		  				ROS_INFO_STREAM("temp: " << i << " " << j << " " << nearest_indices.size());
 		  		}
 		  		// Normalize all values by the number of neighbor points used
 		  		normalizeAverages(histogram_point, nearest_indices.size());
 		  		normalizeHistogram(histogram_point);
+	//		  		if(i == 100 || i == 300 || i == 563)
+	//		  		{
+	//		  			ROS_ERROR_STREAM("itwf intensity: " << histogram_point.histogram[0+36] << " " << histogram_point.histogram[2+36] << " " << histogram_point.histogram[4+36] << " " << histogram_point.histogram[7+36] << " " << histogram_point.histogram[9+36] << " " << histogram_point.histogram[11+36] << " depth: " 
+	//														  << histogram_point.histogram[0] << " " << histogram_point.histogram[2] << " " << histogram_point.histogram[4] << " " << histogram_point.histogram[7] << " " << histogram_point.histogram[9] << " " << histogram_point.histogram[11] << " horz: " 
+	//														  << histogram_point.histogram[0+12] << " " << histogram_point.histogram[2+12] << " " << histogram_point.histogram[4+12] << " " << histogram_point.histogram[7+12] << " " << histogram_point.histogram[9+12] << " " << histogram_point.histogram[11+12] << " second: " 
+	//														  << histogram_point.histogram[0+24] << " " << histogram_point.histogram[2+24] << " " << histogram_point.histogram[4+24] << " " << histogram_point.histogram[7+24] << " " << histogram_point.histogram[9+24] << " " << histogram_point.histogram[11+24] << " others: "  
+	//														  << histogram_point.histogram[0+48] << " " << histogram_point.histogram[2+48] << " " << histogram_point.histogram[4+60] << " " << histogram_point.histogram[7+60] << " " << histogram_point.histogram[9+72] << " " << histogram_point.histogram[11+72]);  
+	//		  			ROS_ERROR_STREAM("temp " << histogram_point.x << " " << histogram_point.y << " " << histogram_point.z);		
+	//		  		}
 		  		incrementEmptyBins(num_empty_bins, histogram_point);
-		  		if(i == 100 || i == 300 || i == 563)
-		  		{
-		  			ROS_ERROR_STREAM("itwf intensity: " << histogram_point.histogram[0+36] << " " << histogram_point.histogram[2+36] << " " << histogram_point.histogram[4+36] << " " << histogram_point.histogram[7+36] << " " << histogram_point.histogram[9+36] << " " << histogram_point.histogram[11+36] << " depth: " 
-														  << histogram_point.histogram[0] << " " << histogram_point.histogram[2] << " " << histogram_point.histogram[4] << " " << histogram_point.histogram[7] << " " << histogram_point.histogram[9] << " " << histogram_point.histogram[11] << " horz: " 
-														  << histogram_point.histogram[0+12] << " " << histogram_point.histogram[2+12] << " " << histogram_point.histogram[4+12] << " " << histogram_point.histogram[7+12] << " " << histogram_point.histogram[9+12] << " " << histogram_point.histogram[11+12] << " second: " 
-														  << histogram_point.histogram[0+24] << " " << histogram_point.histogram[2+24] << " " << histogram_point.histogram[4+24] << " " << histogram_point.histogram[7+24] << " " << histogram_point.histogram[9+24] << " " << histogram_point.histogram[11+24] << " others: "  
-														  << histogram_point.histogram[0+48] << " " << histogram_point.histogram[2+48] << " " << histogram_point.histogram[4+60] << " " << histogram_point.histogram[7+60] << " " << histogram_point.histogram[9+72] << " " << histogram_point.histogram[11+72]);  
-		  			ROS_ERROR_STREAM("temp " << histogram_point.x << " " << histogram_point.y << " " << histogram_point.z);		
-		  		}
 			}
 			else 
 				ROS_ERROR_STREAM_THROTTLE(0.1, "[ITWFEstimation] KdTree Nearest Neighbor search failed! Unable to populate histogram for point " << i << "with XYZ values " << interest_points.points[i].x << " " << interest_points.points[i].y << " " << interest_points.points[i].z << ". This message throttled...");
-			output.points.push_back(histogram_point); 
+			output.points.push_back(histogram_point); 	
+
+			//if(buildITWFPoint(&histogramgram_point, interest_points.points[i]));
+			//	incrementEmptyBins(num_empty_bins, histogram_point);
 		}  
 		ROS_DEBUG_STREAM("[ITWFEstimation] Successfully created histogram cloud of size " << output.points.size() << ". Percent of bins unfilled: " << float(num_empty_bins)/(output.points.size()*output.points[0].descriptorSize()/7)*100 << "%%.");
 	} 

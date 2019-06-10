@@ -102,6 +102,8 @@ namespace pcl
         void getPlaneVectors(Eigen::Vector3f &in_plane_horz, Eigen::Vector3f &in_plane_second);
         // Set Histogram Scales
         void setHistogramScales(float depth_half_lim, float intensity_minimum, float intensity_maximum);
+        // Actuall compute a ITWF point
+        void buildITWFPoint (PointOutT histogram_point, PointInterestT interest_point);
 	};
 
 

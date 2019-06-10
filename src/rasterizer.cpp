@@ -115,6 +115,7 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 	// Create the segmentation objects
 	pcl::SACSegmentation<PointType> seg;
 	pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
+	pcl::ModelCoefficients::Ptr coefficients_all_points (new pcl::ModelCoefficients);
 	pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
 	// Basic SAC Settings
 	seg.setModelType (pcl::SACMODEL_PLANE);
@@ -122,7 +123,7 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 	// Segmentation Parameters
 	seg.setOptimizeCoefficients (true);
 	seg.setMaxIterations (req.max_iterations);
-	seg.setDistanceThreshold (req.threshold_distance);
+	seg.setDistanceThreshold (req.plane_threshold_distance);
 	// Find Plane Inliers
 	seg.setInputCloud (outlierless_cloud_ptr);
 	seg.segment (*inliers, *coefficients);
@@ -132,6 +133,8 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 		ROS_WARN_STREAM("[PointcloudProcessing]   Could not find any planes in the point cloud.");
 		return false;
 	}  
+	seg.setDistanceThreshold(req.wall_threshold_distance);
+	seg.segment (*inliers, *coefficients_all_points);
 	// Extract Inliers to New Cloud
 	pcl::ExtractIndices<PointType> extract (true);
 	extract.setInputCloud(outlierless_cloud_ptr);
@@ -148,16 +151,24 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 	// -------------------------- Transform Cloud --------------------------
 	// ------------------------------------------------------------------------
 	// Rotate cloud to be on XZ plane
-	res.rotated_cloud = PointcloudUtilities::rotatePlaneToXZ(initial_voxelized_cloud, coefficients->values);
+	Eigen::Matrix4f plane_rotation_to_xz;
+	res.rotated_cloud = PointcloudUtilities::rotatePlaneToXZ(initial_voxelized_cloud, coefficients->values, plane_rotation_to_xz);
 	PCP rotated_plane_ptr(new PC());
 	pcl::fromROSMsg(res.rotated_cloud, *rotated_plane_ptr);
 	// ----------- Finding Translation ----------- 
 	// Output Clouds
 	PCP transformed_plane_ptr(new PC());
 	// Find Translation
-	res.transformed_cloud = PointcloudUtilities::translatePlaneToXZ(res.rotated_cloud);
+	Eigen::Matrix4f plane_translation_to_xz;
+	res.transformed_cloud = PointcloudUtilities::translatePlaneToXZ(res.rotated_cloud, plane_translation_to_xz);
 	float min_x, max_x, min_y, max_y, min_z, max_z, min_intensity, max_intensity;
 	PointcloudUtilities::cloudLimits(res.rotated_cloud, &min_x, &max_x, &min_y, &max_y, &min_z, &max_z, &min_intensity, &max_intensity);
+	res.cloud_limits.push_back(min_x);
+	res.cloud_limits.push_back(max_x);
+	res.cloud_limits.push_back(min_y);
+	res.cloud_limits.push_back(max_y);
+	res.cloud_limits.push_back(min_z);
+	res.cloud_limits.push_back(max_z);
 	float mean_y = PointcloudUtilities::meanValue(res.rotated_cloud, 'y');
 	res.transformed_cloud.header.stamp = req.input_cloud.header.stamp;
 	res.transformed_cloud.header.frame_id = req.input_cloud.header.frame_id;
@@ -255,6 +266,8 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 				{
 					for(int k=0; k<nearest_indices.size(); k++)
 					{
+						if(nearest_dist_squareds[k] > pow(req.hole_filling_max_dist,2))
+							continue;
 						pcl::PointXYZI target_point = voxelized_cloud_ptr->points[nearest_indices[k]];
 						float dist = pow(nearest_dist_squareds[k],0.5);
 						float depth_color = (target_point.y-min_y+mean_y)/(max_y-min_y);
@@ -263,10 +276,14 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 						intensity += intensity_color / dist;
 						total_inverse_distance += 1 / dist;
 					}
+					if(total_inverse_distance == 0)
+						continue;
 					depth_img.at<uchar>(i,j) = 255 * depth / total_inverse_distance;
 					intensity_img.at<uchar>(i,j) = 255 * intensity / total_inverse_distance;
 				}
+				res.image_fill_ratio--;
 			}
+		res.image_fill_ratio /= (image_wdt*image_hgt);
 
 /*		cv::Mat filled(image_hgt,image_wdt,CV_8UC1,cv::Scalar(0));
 		cv::Mat mask = (cv::Mat_<double>(3,3) << 0.125, 0.125, 0.125, 0.125, 0, 0.125, 0.125, 0.125, 0.125);
@@ -291,6 +308,26 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 	depth_img.copyTo(wall_depth_cv->image);
 	intensity_img.copyTo(wall_intensity_cv->image);
 
+	pcl::PointCloud<pcl::PointXYZI>::Ptr output_raster_cloud(new pcl::PointCloud<pcl::PointXYZI>());
+	for(int i=0; i<image_hgt; i++)
+		for(int j=0; j<image_wdt; j++)
+		{
+			pcl::PointXYZI point;
+			point.x = j*req.pixel_wdt;
+			point.y = float(depth_img.at<uchar>(i,j))/255.0*(max_y-min_y) +min_y-mean_y;
+			point.z = -i*req.pixel_hgt;
+			point.intensity = float(intensity_img.at<uchar>(i,j))/255.0*(max_intensity-min_intensity) +min_intensity;
+			output_raster_cloud->points.push_back(point);
+		}
+	pcl::toROSMsg(*output_raster_cloud, res.output_cloud_raster_transformed);
+	res.output_cloud_raster_transformed.header = req.input_cloud.header;
+	ROS_DEBUG_STREAM("[Rasterizer] Rebuilt cloud with holes filled in raster grid. Size is " << output_raster_cloud->points.size());
+
+	Eigen::Matrix4f entire_transform;
+	entire_transform = plane_rotation_to_xz*plane_translation_to_xz;
+	PointcloudUtilities::inverseTransform(res.output_cloud_raster_transformed, res.output_cloud_raster, entire_transform);
+	res.output_cloud_raster.header = req.input_cloud.header;
+
 	//wall_cv->encoding = cv_bridge::CV_8UC3; 
 	// Output
 	wall_depth_cv->toImageMsg(res.output_depth_image);
@@ -307,11 +344,7 @@ Rasterizer<PointType>::rasterizer_service(wall_features::rasterizer_service::Req
 	for (int i=0; i < coefficients->values.size(); i++)
 		res.plane_coefficients.push_back(coefficients->values[i]);
 
-	ros::Duration(3).sleep();
-
 	ROS_INFO_STREAM("[Rasterizer] Rasterized cloud built. Image size is " << image_wdt << " by " << image_hgt << ", with min and max depth at " << res.depth_min << " and " << res.depth_max);
-
-	ros::Duration(3).sleep();
 
 	return true;
 }

@@ -1,11 +1,19 @@
 
 rasterizer:
-  pixel_width:            0.006
-  pixel_height:           0.006
+  pixel_width:            0.005
+  pixel_height:           0.005
   outlier_filter:         false
   outlier_filter_scale:   0.01
   outlier_neighbors:      1
   max_iterations:         10000
   load_from_bag:          true
-  bag_name:               /home/conor/ros_data/trees/58 AHG Bought Panels Rebar/segmented_rocky.bag  # Faro/segmented_screwy.bag
-  bag_topic:              /first_wall
+  bag_name:               /home/conor/ros_data/trees/73 Terrible Wall For Registration/primitive_search_first_wall1544147613.439628.bag #/home/conor/ros_data/trees/Final_Scans/TerribleAHG_Room_Side/registration_scans/third_spot/primitive_search_right_wall1555554172.440070.bag # Faro/segmented_screwy.bag
+  bag_topic:              /first_wall  #/right_wall
+  plane_threshold_distance: 0.05
+  wall_threshold_distance: 0.07
+  fill_holes:             true
+  hole_filling_neighbors: 3
+  hole_filling_max_dist:  0.06
+  trim_edges:             true
+  trim_vector:            [-6, 6, -0.5, 2.6]   # [left, right, bottom, top] for a vertical wall
+  blur_size:              5

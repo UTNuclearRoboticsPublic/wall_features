@@ -4,6 +4,10 @@
 
 #include <ros/ros.h>
 
+#include <pcl_ros/transforms.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/kdtree/kdtree_flann.h>
+
 #include "wall_features/wall_change.h"
 #include "wall_features/wall_change_pointcloud.h"
 
@@ -14,10 +18,10 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 
-// Registration
-#include <pointcloud_registration_server/pointcloud_registration.h>
+// Registration   
+/*#include <pointcloud_registration_server/pointcloud_registration.h>
 #include <pointcloud_registration_server/registration_service.h>
-#include <pointcloud_registration_server/reg_creation.h>
+#include <pointcloud_registration_server/reg_creation.h>  */
 
 #include <pcl/filters/voxel_grid.h>
 

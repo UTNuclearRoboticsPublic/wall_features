@@ -10,6 +10,10 @@ string bag_name
 string bag_topic
 
 # -------------------------------------------------------
+# If this option is false, the histogram will not be populated
+bool estimate_histogram
+
+# -------------------------------------------------------
 # The points at which damage and histogram are evaluated
 
 #   These can be driven by voxelization

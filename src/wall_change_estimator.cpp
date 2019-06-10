@@ -7,7 +7,7 @@ WallChangeEstimator::WallChangeEstimator()
 	ros::ServiceServer service_server = nh.advertiseService("wall_change_estimation", &WallChangeEstimator::wall_change, this);
 	ros::ServiceServer service_server_pointcloud = nh.advertiseService("wall_change_estimation_pointcloud", &WallChangeEstimator::wall_change_pointcloud, this);
 
-	ros::ServiceClient registration_client = nh.serviceClient<pointcloud_registration_server::registration_service>("pointcloud_registration");
+//	ros::ServiceClient registration_client = nh.serviceClient<pointcloud_registration_server::registration_service>("pointcloud_registration");
 
 	ros::spin();	
 }

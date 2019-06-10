@@ -8,7 +8,8 @@ float32 outlier_filter_scale
 
 # Plane RANSAC Segmentation
 int32 max_iterations
-float32 threshold_distance
+float32 plane_threshold_distance
+float32 wall_threshold_distance
 
 # Raster Image
 float32 pixel_wdt
@@ -16,6 +17,7 @@ float32 pixel_hgt
 
 bool fill_holes
 int32 hole_filling_neighbor_count
+float32 hole_filling_max_dist
 
 ---
 
@@ -26,6 +28,8 @@ sensor_msgs/PointCloud2 plane_cloud
 sensor_msgs/PointCloud2 rotated_cloud
 sensor_msgs/PointCloud2 transformed_cloud
 sensor_msgs/PointCloud2 output_cloud
+sensor_msgs/PointCloud2 output_cloud_raster
+sensor_msgs/PointCloud2 output_cloud_raster_transformed
 float32 image_fill_ratio
 int32 image_wdt
 int32 image_hgt
@@ -34,3 +38,4 @@ float32 depth_min
 int32 intensity_min
 int32 intensity_max
 float32[] plane_coefficients
+float32[] cloud_limits

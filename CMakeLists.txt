@@ -14,7 +14,6 @@ find_package(catkin REQUIRED
   sensor_msgs 
   pointcloud_primitive_search
   pointcloud_processing_server
-  pointcloud_registration_server
   message_generation
   cv_bridge
   pcl_ros
@@ -178,6 +177,10 @@ add_dependencies(
 target_link_libraries(
   wall_damage_estimator_server ${catkin_LIBRARIES}
 )
+
+
+add_library(linear_feature_intersection src/linear_feature_intersection.cpp)
+add_dependencies(linear_feature_intersection ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 
 ## Declare a C++ library

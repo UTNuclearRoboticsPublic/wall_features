@@ -50,8 +50,6 @@
   <run_depend>pointcloud_processing_server</run_depend>
   <build_depend>pointcloud_primitive_search</build_depend>
   <run_depend>pointcloud_primitive_search</run_depend>
-  <build_depend>pointcloud_registration_server</build_depend>
-  <run_depend>pointcloud_registration_server</run_depend>
   <build_depend>roscpp</build_depend>
   <run_depend>roscpp</run_depend>
 
